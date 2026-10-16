@@ -1,0 +1,12 @@
+data/knots_and_cats/
+crops/
+crops_norm/
+crops_binary/
+crossings/
+outputs/
+__pycache__/
+*.pyc
+.DS_Store
+*.zip
+*.pth
+*.pt
