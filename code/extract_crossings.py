@@ -2,7 +2,7 @@
 Cut a small square image around every DNA crossing, for the crossing classifier.
 
 A crossing is a point where one DNA strand passes over another. TopoStats has already found
-every crossing (it calls them "nodes") and saved the following in each .topostats file:
+every crossing (it calls them nodes) and saved the following in each .topostats file:
   - where the crossing is                  nodestats/above/stats/grain_i/node_j/node_coords
   - the path of each strand through it     .../node_j/branch_stats/k/ordered_coords
   - TopoStats' own decision on which strand is on top, from the width of each strand's
@@ -14,7 +14,8 @@ Which crossings are used:
   - crossings that TopoStats marked as an error are skipped. although in the dataset there is no such error
   - crossings with fewer than 2 strands are skipped (nothing to compare)
   - at a crossing with more than 2 strands, every PAIR of strands becomes its own sample
-    (2 strands -> 1 pair, 3 strands -> 3 pairs, 4 strands -> 6 pairs)
+    (2 strands -> 1 pair, 3 strands -> 3 pairs, 4 strands -> 6 pairs). we simply use itertools
+    to select all possible pairs.
 
 Each sample is a 3-channel array of 3 x 64 x 64 pixels at 1 nm per pixel (a 64 x 64 nm square
 centred on the crossing):
@@ -31,9 +32,9 @@ some detail. To change this, edit NM_PER_PX and SIZE below (e.g. 0.5 and 128 kee
 Output (default: crossings/ in the project folder):
     crossings/npy/<id>.npy     the 3 x 64 x 64 arrays (for training)
     crossings/png/<id>.png     colour preview: grey = height, red = strand A, blue = strand B
-    crossings/sheet.png        40 random previews; also copied to results/figures/qc/crossings_sheet.png
-                               OPEN IT: every square should show a crossing in the middle,
-                               with the red and blue lines running along the two strands
+    results/figures/qc/crossings_sheet.png
+                               40 random previews. OPEN IT: each square should show
+                               a crossing in the middle
     crossings/metadata.csv     one row per sample: sample, knot type, imaging session, buffer,
                                strand widths, TopoStats' decision (ts_a_on_top), its reliability
                                score (ts_confidence), the crossing sign (writhe), and whether the
