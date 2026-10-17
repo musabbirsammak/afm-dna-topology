@@ -1,28 +1,39 @@
 """
-WEEK 2, STEP 3 - Train a small network to say "is strand A (red) on top of strand B (blue)?"
-and compare it with TopoStats (FWHM rule) on exactly the same crossings.
+Train a small network to answer "is strand A (red) on top of strand B (blue)?"
+and compare it with TopoStats' rule (the wider strand is on top) on exactly the same crossings.
 
 Uses:
-  ../crossings/npy/<id>.npy      3 x 64 x 64 squares (height, strand A, strand B)  - from extract_crossings.py
-  ../crossings/labels.csv        automatic correct answers                          - from make_labels.py
+  crossings/npy/<id>.npy     3 x 64 x 64 squares (height, strand A, strand B)  - from extract_crossings.py
+  crossings/labels.csv       the correct answers (167 crossings)              - from make_labels.py
+  crossings/metadata.csv     TopoStats' answers for all crossings (only for --teacher and --predict_all)
+Molecules whose crossings ALL disagree with the expected sign ("all opposite") are left out.
 
-Test is done on IMAGING DAYS THE MODEL NEVER SAW (crossings grouped by session), every crossing
-predicted exactly once. Two "molecule-level" cheats are impossible here: the square is 64 nm wide
-and only one crossing is asked about.
+Testing: crossings are grouped by imaging day. Each day is tested by a model that never saw
+that day in training, so every labelled crossing is predicted exactly once.
 
-Tricks for the small dataset (each square -> 16 versions, all with a correct answer):
-  - 8 rotations/mirror images (a mirror image does NOT change which strand is on top)
-  - swap red and blue and flip the answer
-  - small random height scaling + noise, so absolute brightness of a session is less useful
+Training modes:
+  (default)            learn only from the correct answers of the training days
+  --teacher            learn from TopoStats' own answers for all crossings of the training days
+                       (about 2,000, about 80% correct; no correct answers used)
+  --teacher --finetune the teacher model, then trained further on the correct answers of the training days
+
+Making the most of little data (each square -> 16 versions, all with a known answer):
+  - 4 rotations x mirror or not (a mirror image does NOT change which strand is on top)
+  - red and blue swapped, with the answer flipped
+  - heights scaled by 0.85-1.15 plus a little noise, so a session's overall brightness helps less
 At test time the prediction is averaged over all 16 versions.
 
-Run (Mac is fine):
-  python train_crossings.py --crossings ../crossings --out ../results_crossings                       # learn from the ~170 correct answers only
-  python train_crossings.py --crossings ../crossings --out ../results_crossings --teacher             # learn from TopoStats' calls on ~2,000 crossings
-  python train_crossings.py --crossings ../crossings --out ../results_crossings --teacher --finetune  # ...then polish with the correct answers
-Test crossings are always the correct answers of imaging days left out of ALL training.
-Optional, after you are happy with the numbers: predict EVERY crossing (2,457) with a model trained on all labels
-  python train_crossings.py --crossings ../crossings --out ../results_crossings --predict_all
+Output (default: results/crossings/):
+  crossing_oof_<mode>.csv        one row per labelled crossing: correct answer, the network's
+                                 answer and TopoStats' answer (mode = true_labels, teacher, teacher_finetune)
+  all_crossings_predicted_<mode>.csv   only with --predict_all (see below)
+
+Run (a laptop CPU is fine):
+  python train_crossings.py --crossings ../crossings                       # correct answers only
+  python train_crossings.py --crossings ../crossings --teacher             # TopoStats as teacher
+  python train_crossings.py --crossings ../crossings --teacher --finetune  # teacher, then correct answers
+Optional: --predict_all also trains one final model on ALL labelled days, using the same mode,
+and predicts every crossing in metadata.csv (2,457). Saved as all_crossings_predicted_<mode>.csv.
 """
 import argparse, os, time
 
@@ -105,6 +116,21 @@ def fit(x, y, epochs, seed, dev, model=None, lr=1e-3):
     return model
 
 
+def as_bool(s):
+    """CSV columns of True/False can come back as text; empty cells stay missing (NaN)."""
+    return s.map(lambda v: v if isinstance(v, bool) or pd.isna(v) else str(v).strip().lower() == "true")
+
+
+def train_one(a, xtr, ytr, xt, yt, seed, dev):
+    """One model in the chosen mode. xt, yt = TopoStats' answers (teacher data), may be None."""
+    if a.teacher:
+        m = fit(xt, yt, a.teacher_epochs, seed=seed, dev=dev)
+        if a.finetune:
+            m = fit(xtr, ytr, max(10, a.epochs // 3), seed=seed + 50, dev=dev, model=m, lr=2e-4)
+        return m
+    return fit(xtr, ytr, a.epochs, seed=seed, dev=dev)
+
+
 def boot_ci(v, n=2000, seed=0):
     rng = np.random.default_rng(seed); v = np.asarray(v, float)
     m = [v[rng.integers(0, len(v), len(v))].mean() for _ in range(n)]
@@ -150,6 +176,9 @@ if __name__ == "__main__":
 
     lab = pd.read_csv(os.path.join(a.crossings, "labels.csv"), dtype={"session": str})
     lab = lab[~lab.pattern.str.startswith("all opposite")].reset_index(drop=True)
+    lab["true_a_on_top"] = as_bool(lab.true_a_on_top)
+    lab["ts_correct"] = as_bool(lab.ts_correct)
+    lab = lab[lab.true_a_on_top.notna()].reset_index(drop=True)   # a crossing without an answer cannot be used
     x = torch.from_numpy(np.stack([np.load(os.path.join(a.crossings, "npy", i + ".npy")) for i in lab.id])).float()
     y = torch.tensor(lab.true_a_on_top.astype(bool).values, dtype=torch.float)
     k = min(a.folds, lab.session.nunique())
@@ -157,9 +186,10 @@ if __name__ == "__main__":
 
     if a.teacher:
         md = pd.read_csv(os.path.join(a.crossings, "metadata.csv"), dtype={"session": str})
+        md["ts_a_on_top"] = as_bool(md.ts_a_on_top)
         md = md[md.ts_a_on_top.notna()].reset_index(drop=True)
         xt_all = torch.from_numpy(np.stack([np.load(os.path.join(a.crossings, "npy", i + ".npy")) for i in md.id])).float()
-        yt_all = torch.tensor(md.ts_a_on_top.astype(str).str.lower().eq("true").values, dtype=torch.float)
+        yt_all = torch.tensor(md.ts_a_on_top.astype(bool).values, dtype=torch.float)
         print(f"teacher mode: {len(md)} crossings with TopoStats calls available" + (" + fine-tuning" if a.finetune else ""))
 
     probs = np.zeros(len(lab)); fold_of = np.zeros(len(lab), int); t0 = time.time()
@@ -167,14 +197,13 @@ if __name__ == "__main__":
         test_days = sorted(lab.session.iloc[te].unique())
         xtr, ytr = x[tr].to(dev), y[tr].to(dev)
         p = np.zeros(len(te)); train_acc = []
+        if a.teacher:
+            keep = ~md.session.isin(test_days).values          # teacher data never includes the test days
+            xt, yt = xt_all[keep].to(dev), yt_all[keep].to(dev)
+        else:
+            xt = yt = None
         for s in range(a.seeds):
-            if a.teacher:
-                keep = ~md.session.isin(test_days).values
-                m = fit(xt_all[keep].to(dev), yt_all[keep].to(dev), a.teacher_epochs, seed=100 * fold + s, dev=dev)
-                if a.finetune:
-                    m = fit(xtr, ytr, max(10, a.epochs // 3), seed=100 * fold + s + 50, dev=dev, model=m, lr=2e-4)
-            else:
-                m = fit(xtr, ytr, a.epochs, seed=100 * fold + s, dev=dev)
+            m = train_one(a, xtr, ytr, xt, yt, seed=100 * fold + s, dev=dev)
             p += predict(m, x[te].to(dev)).cpu().numpy() / a.seeds
             train_acc.append(((predict(m, xtr).cpu().numpy() > 0.5) == ytr.cpu().numpy().astype(bool)).mean())
         probs[te] = p; fold_of[te] = fold
@@ -193,13 +222,19 @@ if __name__ == "__main__":
     print(f"\nsaved {a.out}/crossing_oof_{tag}.csv")
 
     if a.predict_all:
-        md = pd.read_csv(os.path.join(a.crossings, "metadata.csv"))
-        xa = torch.from_numpy(np.stack([np.load(os.path.join(a.crossings, "npy", i + ".npy")) for i in md.id])).float()
-        p = np.zeros(len(md))
+        # one final model per seed, trained on ALL labelled days in the SAME mode as above
+        allc = pd.read_csv(os.path.join(a.crossings, "metadata.csv"), dtype={"session": str})
+        allc["ts_a_on_top"] = as_bool(allc.ts_a_on_top)
+        xa = torch.from_numpy(np.stack([np.load(os.path.join(a.crossings, "npy", i + ".npy")) for i in allc.id])).float()
+        xt, yt = (xt_all.to(dev), yt_all.to(dev)) if a.teacher else (None, None)
+        p = np.zeros(len(allc))
         for s in range(a.seeds):
-            m = fit(x.to(dev), y.to(dev), a.epochs, seed=999 + s, dev=dev)
+            m = train_one(a, x.to(dev), y.to(dev), xt, yt, seed=999 + s, dev=dev)
             p += np.concatenate([predict(m, xb.to(dev)).cpu().numpy() for xb in xa.split(256)]) / a.seeds
-        md["cnn_p_a_on_top"] = p
-        md.to_csv(os.path.join(a.out, "all_crossings_predicted.csv"), index=False)
-        agree = ((p > 0.5) == md.ts_a_on_top.astype(bool)).mean()
-        print(f"saved {a.out}/all_crossings_predicted.csv ({len(md)} crossings; CNN agrees with TopoStats on {agree:.0%})")
+        allc["cnn_p_a_on_top"] = p
+        allc["cnn_a_on_top"] = p > 0.5
+        allc.to_csv(os.path.join(a.out, f"all_crossings_predicted_{tag}.csv"), index=False)
+        has = allc.ts_a_on_top.notna()
+        agree = (allc.cnn_a_on_top[has] == allc.ts_a_on_top[has].astype(bool)).mean()
+        print(f"saved {a.out}/all_crossings_predicted_{tag}.csv ({len(allc)} crossings; "
+              f"CNN agrees with TopoStats on {agree:.0%} of the {has.sum()} crossings TopoStats answered)")
