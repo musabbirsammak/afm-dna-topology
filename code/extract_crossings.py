@@ -239,12 +239,10 @@ def main(root, out, crops_meta):
     sheet = Image.new("RGB", (8 * 132, 5 * 132), "white")
     for j, r in enumerate(pick.itertuples()):
         sheet.paste(Image.open(os.path.join(out, "png", r.id + ".png")), ((j % 8) * 132 + 2, (j // 8) * 132 + 2))
-    sheet.save(os.path.join(out, "sheet.png"))
-
-    import shutil
     qc = os.path.join(REPO, "results", "figures", "qc")
     os.makedirs(qc, exist_ok=True)
-    shutil.copyfile(os.path.join(out, "sheet.png"), os.path.join(qc, "crossings_sheet.png"))
+    sheet_path = os.path.join(qc, "crossings_sheet.png")
+    sheet.save(sheet_path)
 
     print(f"\nsaved {out}/sheet.png -> open it: every square should show a crossing in the MIDDLE,"
           f"\nwith the red and blue lines running along the two DNA strands.")
