@@ -218,6 +218,13 @@ def main(root, out, crops_meta):
                     for a, b in itertools.combinations(n["strands"], 2):
                         pa = a["path"][:, ::-1] if swap else a["path"]
                         pb = b["path"][:, ::-1] if swap else b["path"]
+
+                        # a strand that never reaches the crossing is discarded
+                        da, db = dist_to_centre_nm(pa, centre, px), dist_to_centre_nm(pb, centre, px)
+                        if max(da, db) > 5.0:          
+                            skipped["strand far from crossing"] = skipped.get("strand far from crossing", 0) + 1
+                            continue
+                        
                         x = np.stack([height, draw(pa, centre, px), draw(pb, centre, px)]).astype(np.float32)
                         sid = f"{sample}__{image}__{g}__{n['name']}__s{a['k']}{b['k']}"
                         np.save(os.path.join(out, "npy", sid + ".npy"), x)
