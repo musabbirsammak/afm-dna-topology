@@ -139,6 +139,13 @@ def draw(path, centre, px):
     return ndimage.binary_dilation(m, iterations=r) if r else m
 
 
+def dist_to_centre_nm(path, centre, px):
+    """Closest distance (nm) between a strand path and the crossing centre."""
+    if len(path) == 0:
+        return np.inf
+    return float(np.min(np.linalg.norm(path - centre, axis=1)) * px)
+
+
 def preview(x):
     h = (x[0] * 255).astype(np.uint8)
     rgb = np.stack([h, h, h], -1).astype(np.float32)
