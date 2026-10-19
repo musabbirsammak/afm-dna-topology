@@ -10,7 +10,7 @@ r () { name=$1; shift; echo ">> $name"; python "$@" 2>&1 | tee "results/logs/$na
 
 for e in 15 60; do
   for m in resnet18 convnext_tiny; do
-    r "train_1nm_${m}_session_ep${e}" code/train.py --crops crops_1nm --model "$m" --split session \
+    r "train_1nm_${m}_session_ep${e}" code/train_crops.py --crops crops_1nm --model "$m" --split session \
                                       --epochs "$e" --out "results/classify_1nm_ep${e}"
   done
 done
