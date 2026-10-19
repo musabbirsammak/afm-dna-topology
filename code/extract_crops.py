@@ -20,10 +20,16 @@ What it does, for every molecule (TopoStats "grain") in every .topostats file:
   5. saves it as .npy (for training) and .png (for you to look at)
 and writes one row per molecule to metadata.csv.
 
-Run:
-    python extract_crops.py --root "PATH/TO/knots_and_cats" --out [crops|crops_norm|crops_binary] --mode [height|norm|binary]
-Check one file first (prints what is inside, saves nothing):
-    python extract_crops.py --root "PATH/TO/knots_and_cats" --check
+Run from the project folder (every option is optional; defaults in brackets):
+python code/extract_crops.py
+    --root PATH          folder that contains trefoil/, torus/, twist/, ...  [data/knots_and_cats]
+    --mode MODE          height = absolute height in nm
+                         norm   = height divided by the molecule's own DNA height
+                         binary = shape only                                  [height]
+    --out PATH           output folder  [crops, crops_norm or crops_binary, following --mode]
+    --nm_per_px X        pixel size of the crops in nm                        [1.0]
+    --size N             canvas size in pixels                                [256]
+    --check              print what is inside the first file and save nothing
 """
 import argparse, glob, os, re
 
@@ -256,9 +262,13 @@ def main(root, out, nm_per_px, size, mode="height"):
     md = pd.DataFrame(rows)
     md.to_csv(os.path.join(out, "metadata.csv"), index=False)
     print(f"\nsaved {len(md)} molecules to {out}/  ({md.keep.sum()} pass the filters)\n")
-    print(md.groupby(["label", "sample"]).agg(molecules=("id", "size"), kept=("keep", "sum"),
-                                              sessions=("session", "nunique"),
-                                              shrunk=("scaled_to_fit", "sum")).to_string())
+    summary = md.groupby(["label", "sample"]).agg(molecules=("id", "size"), kept=("keep", "sum"),
+                                                  sessions=("session", "nunique"),
+                                                  shrunk=("scaled_to_fit", "sum"))
+    print(summary.to_string())
+    summary.to_csv(os.path.join(out, "summary.csv"))
+    print(f"\nsaved {out}/summary.csv")
+
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
