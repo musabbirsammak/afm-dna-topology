@@ -242,13 +242,32 @@ def main(root, out, crops_meta):
                             molecule_kept=keep.get((sample, image, g)) if keep is not None else None))
         if (i + 1) % 25 == 0:
             print(f"  {i + 1}/{len(files)} files, {len(rows)} samples so far")
+    
     md = pd.DataFrame(rows)
     md.to_csv(os.path.join(out, "metadata.csv"), index=False)
-    print(f"\nsaved {len(md)} samples ({md[['image', 'grain', 'node']].drop_duplicates().shape[0]} crossings) to {out}/")
+    n_cross = md[["image", "grain", "node"]].drop_duplicates().shape[0]
+    print(f"\nsaved {len(md)} samples ({n_cross} crossings) to {out}/")
     print(f"skipped: {skipped}")
     print(f"crossing pixels lying on the skeleton (should be ~100%): median {np.median(on_skel):.0%}")
+    per_class = pd.crosstab(md.label, md.n_strands, margins=True, margins_name="all")
     print("\nsamples per class and strands per crossing:")
-    print(pd.crosstab(md.label, md.n_strands, margins=True).to_string())
+    print(per_class.to_string())
+
+    # the same numbers as tables, in results/<output folder>/
+    res = os.path.join(REPO, "results", os.path.basename(os.path.normpath(out)))
+    os.makedirs(res, exist_ok=True)
+    pd.DataFrame([dict(
+        nm_per_px=NM_PER_PX, window_nm=WINDOW_NM, patch_px=SIZE,
+        topostats_files=len(files),
+        molecules_with_crossings=md[["sample", "image", "grain"]].drop_duplicates().shape[0],
+        crossings=n_cross, samples=len(md),
+        skipped_less_than_2_strands=skipped.get("<2 strands", 0),
+        skipped_strand_far_from_crossing=skipped.get("strand far from crossing", 0),
+        median_crossing_pixels_on_skeleton=round(float(np.median(on_skel)), 3),
+    )]).to_csv(os.path.join(res, "extraction_summary.csv"), index=False)
+    per_class.to_csv(os.path.join(res, "samples_per_class.csv"))
+    print(f"\nsaved {res}/extraction_summary.csv and {res}/samples_per_class.csv")
+
     # contact sheet for the centring check
     pick = md.sample(min(40, len(md)), random_state=0)
     sheet = Image.new("RGB", (8 * 132, 5 * 132), "white")
@@ -258,7 +277,6 @@ def main(root, out, crops_meta):
     os.makedirs(qc, exist_ok=True)
     sheet_path = os.path.join(qc, f"{os.path.basename(os.path.normpath(out))}_sheet.png")
     sheet.save(sheet_path)
-
     print(f"\nsaved {sheet_path} -> open it: every square should show a crossing in the MIDDLE,"
           f"\nwith the red and blue lines running along the two DNA strands.")
 
@@ -272,11 +290,10 @@ if __name__ == "__main__":
     ap.add_argument("--nm_per_px", type=float, default=1.0, help="patch resolution in nm per pixel (default 1.0)")
     ap.add_argument("--window_nm", type=float, default=64.0, help="width of the square around each crossing in nm (default 64)")
     a = ap.parse_args()
-
     if a.out is None:
         a.out = os.path.join(REPO, f"crossings_{tag(a.nm_per_px)}")
-    
     NM_PER_PX = a.nm_per_px
+    WINDOW_NM = a.window_nm
     SIZE = int(round(a.window_nm / a.nm_per_px))
     print(f"patches: {a.window_nm:g} x {a.window_nm:g} nm at {NM_PER_PX:g} nm per pixel = {SIZE} x {SIZE} pixels")
     check(a.root) if a.check else main(a.root, a.out, a.crops_meta)
