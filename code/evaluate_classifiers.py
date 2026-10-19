@@ -33,8 +33,9 @@ Output: results/classifier_performance/
                          flip vs no flip, 15/60 vs 30 epochs, 0.5 vs 1 nm, norm/binary vs height,
                          model vs model, every run vs TopoStats. Both all and knots.
   confusion/<run>.csv    confusion matrix counts (rows = true type, columns = predicted type)
-  confusion/<run>.png    the same as a picture, with counts and row percentages
-  knots_balanced_accuracy.png   knots balanced accuracy of every run with 95% CIs
+  confusion/<run>.pdf/.png  the same as a picture, with counts and row percentages (Fig. S1)
+  fig2_knots_balanced_accuracy.pdf/.png  knots balanced accuracy of every run with 95% CIs (Fig. 2)
+  fig3_confusion.pdf/.png  ResNet-18 confusion matrices, image split (a) and session split (b) (Fig. 3)
 
 Run from the project folder:
   python code/evaluate_classifiers.py
@@ -138,57 +139,148 @@ def mcnemar(ca, cb):
 
 
 # ----------------------------------------------------------------------------- pictures
-def confusion(r, classes, run):
+# Publication style: sans-serif 8 pt, thin axes, vector PDF + 600 dpi PNG.
+plt.rcParams.update({
+    "font.family": "sans-serif",
+    "font.sans-serif": ["Arial", "Helvetica", "Liberation Sans", "DejaVu Sans"],
+    "font.size": 8, "axes.labelsize": 8, "xtick.labelsize": 8, "ytick.labelsize": 8,
+    "legend.fontsize": 8, "axes.linewidth": 0.6, "xtick.major.width": 0.6, "ytick.major.width": 0.6,
+    "xtick.major.size": 3, "ytick.major.size": 0, "mathtext.default": "regular",
+    "pdf.fonttype": 42, "svg.fonttype": "none",
+})
+INK, MUTED, GRID = "#222222", "#666666", "#e6e6e6"
+CLASS_ORDER = ["0_1", "3_1", "5_1", "5_2", "4^2_1"]                  # knots first, catenane last
+CLASS_TEX = {"0_1": "$0_1$", "3_1": "$3_1$", "5_1": "$5_1$", "5_2": "$5_2$", "4^2_1": "$4^2_1$"}
+MODEL_NAME = {"resnet18": "ResNet-18", "convnext_tiny": "ConvNeXt-Tiny", "dinov2": "DINOv2 + LR"}
+VARIANT = [("flip", "with flip augmentation"), ("1nm_ep15", "15 epochs"), ("1nm_ep60", "60 epochs"),
+           ("05nm", "0.5 nm per pixel"), ("1nm_norm", "normalised input"), ("1nm_binary", "binary input")]
+
+
+def save(fig, name):
+    for ext, kw in (("pdf", {}), ("png", {"dpi": 600})):
+        fig.savefig(os.path.join(OUT, f"{name}.{ext}"), bbox_inches="tight", **kw)
+    plt.close(fig)
+
+
+def variant_of(row):
+    if row["flip"]:
+        return "flip"
+    return "ref" if row["crops"] == "1nm" else row["crops"]
+
+
+def run_title(meta):
+    v = dict(VARIANT).get(variant_of(meta))
+    return f"{MODEL_NAME[meta['model']]}" + (f", {v}" if v else "") + f", {meta['split']} split"
+
+
+def draw_confusion(ax, r, classes):
+    """Row-normalised confusion matrix with counts and row percentages. Returns the image."""
+    classes = [c for c in CLASS_ORDER if c in classes]
     y, p = encode(r.label, r.pred, classes)
     k = len(classes)
     cm = np.bincount(y * k + p, minlength=k * k).reshape(k, k)
-    pd.DataFrame(cm, index=[f"true_{c}" for c in classes], columns=[f"pred_{c}" for c in classes]) \
-        .to_csv(os.path.join(OUT, "confusion", f"{run}.csv"))
     pct = cm / np.maximum(cm.sum(1, keepdims=True), 1)
-    fig, ax = plt.subplots(figsize=(4.8, 4.2))
-    ax.imshow(pct, cmap="Blues", vmin=0, vmax=1)
-    ax.set_xticks(range(k), classes, rotation=45)
-    ax.set_yticks(range(k), classes)
+    im = ax.imshow(pct * 100, cmap="Blues", vmin=0, vmax=100)
+    ax.set_xticks(range(k), [CLASS_TEX[c] for c in classes])
+    ax.set_yticks(range(k), [CLASS_TEX[c] for c in classes])
+    ax.tick_params(length=0)
     for i in range(k):
         for j in range(k):
-            ax.text(j, i, f"{cm[i, j]}\n{pct[i, j]:.0%}", ha="center", va="center", fontsize=7,
-                    color="white" if pct[i, j] > 0.6 else "#222222")
-    ax.set_xlabel("predicted type"); ax.set_ylabel("true type")
-    ax.set_title(run.replace("__", "  "), fontsize=8)
-    fig.tight_layout(); fig.savefig(os.path.join(OUT, "confusion", f"{run}.png"), dpi=200); plt.close(fig)
+            ax.text(j, i, f"{cm[i, j]}\n{pct[i, j]:.0%}", ha="center", va="center", fontsize=7, linespacing=1.15,
+                    color="white" if pct[i, j] > 0.55 else INK)
+    ax.set_xlabel("Predicted class"); ax.set_ylabel("True class")
+    for s in ax.spines.values():
+        s.set_visible(False)
+    return im, cm, classes
+
+
+def confusion(r, classes, run, meta):
+    """One confusion matrix per run: CSV (counts) and a figure (supplementary)."""
+    fig, ax = plt.subplots(figsize=(3.3, 3.0))
+    im, cm, order = draw_confusion(ax, r, classes)
+    pd.DataFrame(cm, index=[f"true_{c}" for c in order], columns=[f"pred_{c}" for c in order]) \
+        .to_csv(os.path.join(OUT, "confusion", f"{run}.csv"))
+    ax.set_title(run_title(meta), fontsize=8, loc="left")
+    fig.savefig(os.path.join(OUT, "confusion", f"{run}.png"), dpi=600, bbox_inches="tight")
+    fig.savefig(os.path.join(OUT, "confusion", f"{run}.pdf"), bbox_inches="tight")
+    plt.close(fig)
+
+
+def figure_confusion_pair(data, model="resnet18", crops="1nm"):
+    """Fig. 3: the same model under the image split (a) and the session split (b)."""
+    a, b = data.get(f"{crops}__{model}_image"), data.get(f"{crops}__{model}_session")
+    if a is None or b is None:
+        return
+    fig, axes = plt.subplots(1, 2, figsize=(6.3, 3.0), constrained_layout=True)
+    for ax, r, tag in ((axes[0], a, "(a) Image split"), (axes[1], b, "(b) Session split")):
+        im, _, _ = draw_confusion(ax, r, sorted(r.label.unique()))
+        ax.set_title(tag, fontsize=9, loc="left", fontweight="bold")
+    axes[1].set_ylabel("")
+    cb = fig.colorbar(im, ax=axes, shrink=0.8, pad=0.02)
+    cb.set_label("Share of true class (%)"); cb.outline.set_visible(False); cb.ax.tick_params(length=2)
+    save(fig, "fig3_confusion")
 
 
 def figure(summary):
+    """Fig. 2: knots-only balanced accuracy of every run, grouped by model, with 95% CIs."""
     s = summary[summary.model != "TopoStats"].copy()
-    s["row"] = s.crops + "  " + s.model + np.where(s.flip, " +flip", "")
-    s = s.sort_values(["crops", "model", "flip"])
-    rows = list(dict.fromkeys(s.row))
-    y_of = {t: i for i, t in enumerate(rows)}
-    fig, ax = plt.subplots(figsize=(7.5, 0.42 * len(rows) + 1.6))
-    for split, color, marker, dy, name in (("session", SESSION_BLUE, "o", -0.13, "session split (new imaging days)"),
-                                           ("image", IMAGE_ORANGE, "s", 0.13, "image split (same imaging days)")):
-        d = s[s.split == split]
-        if d.empty:
+    s["variant"] = [variant_of(r) for _, r in s.iterrows()]
+    rows, y = [], 0.0                                   # (model, variant, label, y position)
+    for model in ("resnet18", "convnext_tiny", "dinov2"):
+        present = set(s[s.model == model].variant)
+        if not present:
             continue
-        ax.errorbar(d.knots_balacc * 100, d.row.map(y_of) + dy,
-                    xerr=[(d.knots_balacc - d.knots_balacc_lo) * 100, (d.knots_balacc_hi - d.knots_balacc) * 100],
-                    fmt=marker, color=color, ms=6, elinewidth=2, capsize=0, label=name)
-    ax.axvline(25, color="#888888", lw=1, ls="--")
-    ax.text(25.5, -0.8, "chance 25%", fontsize=8, color="#555555", va="center")
+        if rows:
+            y += 0.6                                    # gap between model groups
+        if "ref" in present:
+            rows.append((model, "ref", MODEL_NAME[model], y)); y += 1
+        for key, label in VARIANT:
+            if key in present:
+                rows.append((model, key, label, y)); y += 1
+    fig, ax = plt.subplots(figsize=(6.3, 0.24 * y + 0.9))
+
     ts = summary[summary.model == "TopoStats"]
-    if len(ts):                    # TopoStats on the same molecules
-        x = ts.knots_balacc.iloc[0] * 100
-        ax.axvline(x, color="#555555", lw=1, ls=":")
-        ax.text(x + 0.5, -0.8, "TopoStats", fontsize=8, color="#555555", va="center")
-    ax.set_yticks(range(len(rows)), rows, fontsize=8)
-    ax.set_ylim(len(rows) - 0.4, -1.2)
-    ax.set_xlim(0, 100)
-    ax.set_xlabel("knots balanced accuracy (%), types 0_1, 3_1, 5_1, 5_2")
-    ax.grid(axis="x", color="#e5e5e5", lw=0.8); ax.set_axisbelow(True)
-    for side in ("top", "right"):
+    if len(ts):
+        t = ts.iloc[0]
+        ax.fill_betweenx([-0.6, y - 0.4], t.knots_balacc_lo * 100, t.knots_balacc_hi * 100,
+                         color="#ececec", lw=0, zorder=0)
+        ax.vlines(t.knots_balacc * 100, -0.6, y - 0.4, color="#9a9a9a", lw=1, zorder=1)
+        ax.text(t.knots_balacc * 100, -0.75, "TopoStats", ha="center", va="bottom", color=MUTED, fontsize=7.5)
+    ax.vlines(25, -0.6, y - 0.4, color="#9a9a9a", lw=0.8, linestyles=(0, (3, 2)), zorder=1)
+    ax.text(25, -0.75, "Chance", ha="center", va="bottom", color=MUTED, fontsize=7.5)
+
+    for split, color, marker, dy, name in (("session", SESSION_BLUE, "o", 0.0, "Session split (unseen sessions)"),
+                                           ("image", IMAGE_ORANGE, "s", 0.0, "Image split (seen sessions)")):
+        xs, ys, lo, hi = [], [], [], []
+        for model, key, _, yy in rows:
+            d = s[(s.model == model) & (s.variant == key) & (s.split == split)]
+            if d.empty:
+                continue
+            d = d.iloc[0]
+            xs.append(d.knots_balacc * 100); ys.append(yy + dy)
+            lo.append((d.knots_balacc - d.knots_balacc_lo) * 100); hi.append((d.knots_balacc_hi - d.knots_balacc) * 100)
+        if xs:
+            ax.errorbar(xs, ys, xerr=[lo, hi], fmt=marker, ms=5, mfc=color, mec="white", mew=0.6, color=color,
+                        elinewidth=1.4, capsize=0, zorder=3, label=name)
+
+    ax.set_yticks([r[3] for r in rows], [r[2] if r[1] == "ref" else "   " + r[2] for r in rows])
+    for lab, r in zip(ax.get_yticklabels(), rows):
+        lab.set_fontweight("bold" if r[1] == "ref" else "normal")
+        lab.set_horizontalalignment("left")
+    ax.yaxis.set_tick_params(pad=104)
+    ax.set_ylim(y - 0.4, -1.1)
+    ax.set_xlim(0, 80); ax.set_xticks(range(0, 81, 10))
+    ax.set_xlabel("Knots-only balanced accuracy (%)")
+    ax.grid(axis="x", color=GRID, lw=0.6); ax.set_axisbelow(True)
+    for side in ("top", "right", "left"):
         ax.spines[side].set_visible(False)
-    ax.legend(loc="lower left", bbox_to_anchor=(0, 1.0), ncol=2, fontsize=8, frameon=False)
-    fig.tight_layout(); fig.savefig(os.path.join(OUT, "knots_balanced_accuracy.png"), dpi=200); plt.close(fig)
+    from matplotlib.lines import Line2D
+    handles = [Line2D([], [], ls="none", marker=m, ms=5, mfc=c, mec="white", mew=0.6, label=l)
+               for m, c, l in (("o", SESSION_BLUE, "Session split (unseen sessions)"),
+                               ("s", IMAGE_ORANGE, "Image split (seen sessions)"))]
+    ax.legend(handles=handles, loc="lower left", bbox_to_anchor=(0, 1.0), ncol=2, frameon=False,
+              handletextpad=0.2, columnspacing=1.5)
+    save(fig, "fig2_knots_balanced_accuracy")
 
 
 # ----------------------------------------------------------------------------- which runs to compare
@@ -243,7 +335,7 @@ def main():
         for c, g in r.groupby("session"):
             sess.append(dict(run=meta["run"], session=c, n=len(g), types=" ".join(sorted(g.label.unique())),
                              accuracy=(g.pred == g.label).mean()))
-        confusion(r, classes, meta["run"])
+        confusion(r, classes, meta["run"], meta)
         print(f"  {meta['run']:42s} knots balanced acc {row['knots_balacc']:6.1%} "
               f"[{row['knots_balacc_lo']:.1%} - {row['knots_balacc_hi']:.1%}]   all acc {row['all_acc']:.1%}")
 
@@ -319,6 +411,7 @@ def main():
     pd.DataFrame(comp).to_csv(os.path.join(OUT, "comparisons.csv"), index=False)
 
     figure(summary)
+    figure_confusion_pair(data)
     print(f"\nsaved to {OUT}")
 
 
