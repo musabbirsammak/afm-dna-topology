@@ -42,6 +42,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from sklearn.model_selection import GroupKFold
+from extract_crossings import tag
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -159,8 +160,9 @@ def report(r):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--crossings", default=os.path.join(REPO, "crossings"))
-    ap.add_argument("--out", default=os.path.join(REPO, "results", "crossings"))
+    ap.add_argument("--nm_per_px", type=float, default=1.0, help="resolution used in extract_crossings.py")
+    ap.add_argument("--crossings", default=None, help="default: crossings_<resolution>")
+    ap.add_argument("--out", default=None, help="default: results/<name of the crossings folder>")
     ap.add_argument("--epochs", type=int, default=60)
     ap.add_argument("--seeds", type=int, default=3, help="models per fold, predictions averaged")
     ap.add_argument("--folds", type=int, default=5)
@@ -171,6 +173,12 @@ if __name__ == "__main__":
                     help="with --teacher: afterwards fine-tune on the correct answers of the training days")
     ap.add_argument("--teacher_epochs", type=int, default=20)
     a = ap.parse_args()
+
+    if a.crossings is None:
+        a.crossings = os.path.join(REPO, f"crossings_{tag(a.nm_per_px)}")
+    if a.out is None:
+        a.out = os.path.join(REPO, "results", os.path.basename(os.path.normpath(a.crossings)))
+
     dev = device()
     os.makedirs(a.out, exist_ok=True)
 

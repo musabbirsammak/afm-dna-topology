@@ -11,17 +11,18 @@ How it works:
         twist knot 5_2 (pDIR) -> all crossings negative   (Holmes et al., 2025)
         torus knot 5_1 (pINV) -> all crossings positive   (Holmes et al., 2025)
         trefoil 3_1           -> not stated by the source, so taken as the sign that TopoStats
-                                 calls most often on clean trefoils (or set with --trefoil_sign).
+                                 calls most often on clean trefoils or set with --trefoil_sign.
                                  This assumes TopoStats is right more often than wrong on them.
   - So, for each crossing in a clean knot:
         TopoStats' sign = expected sign -> TopoStats chose the right top strand
         TopoStats' sign = opposite sign -> TopoStats chose the wrong one, so the other strand is on top
 
 A molecule is CLEAN when all of these hold:
-  - it is a trefoil, torus knot or twist knot (unknots and catenanes are not used)
+  - it is a trefoil, torus knot or twist knot. unknots and catenanes are not used.
   - TopoStats found exactly the minimum number of crossings for that knot (3 for 3_1, 5 for 5_1 and 5_2)
   - every crossing has exactly 2 strands
   - it was not removed by the length filter in extract_crops.py
+
 Only crossings with a sign of + or - are used.
 
 Each labelled molecule also gets a pattern:
@@ -53,21 +54,26 @@ Prints:
     suggested by Holmes et al., 2025)
 
 Run from the code folder:
-  python make_labels.py --crossings ../crossings
-  python make_labels.py --crossings ../crossings --trefoil_sign +    # fix the trefoil sign by hand
+  python make_labels.py
+  python make_labels.py --trefoil_sign +    # fix the trefoil sign by hand
 """
 import argparse, os
 
 import pandas as pd
+from extract_crossings import tag
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MIN_CROSSINGS = {"3_1": 3, "5_1": 5, "5_2": 5}
 KNOWN_SIGN = {"5_1": "+", "5_2": "-"}
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--crossings", default=os.path.join(REPO, "crossings"))
+ap.add_argument("--nm_per_px", type=float, default=1.0, help="resolution used in extract_crossings.py")
+ap.add_argument("--crossings", default=None, help="default: crossings_<resolution>")
 ap.add_argument("--trefoil_sign", choices=["auto", "+", "-"], default="auto")
 a = ap.parse_args()
+
+if a.crossings is None:
+    a.crossings = os.path.join(REPO, f"crossings_{tag(a.nm_per_px)}")
 
 md = pd.read_csv(os.path.join(a.crossings, "metadata.csv"))
 md["mol"] = md["sample"] + "|" + md["image"] + "|" + md["grain"]
@@ -118,7 +124,7 @@ out = clean[["id", "mol", "label", "session", "expected_sign", "writhe", "ts_a_o
 out.to_csv(os.path.join(a.crossings, "labels.csv"), index=False)
 print(f"\nsaved {a.crossings}/labels.csv  ({len(out)} labelled crossings)")
 
-res = os.path.join(REPO, "results", "crossings")
+res = os.path.join(REPO, "results", os.path.basename(os.path.normpath(a.crossings)))
 os.makedirs(res, exist_ok=True)
 out.to_csv(os.path.join(res, "crossing_labels.csv"), index=False)
 print(f"saved {res}/crossing_labels.csv")

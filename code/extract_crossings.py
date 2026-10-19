@@ -58,7 +58,13 @@ from scipy import ndimage
 
 from extract_crops import LABELS, H_MAX, H_MIN, condition_of, grain_ids, px_nm, session_of
 
+LINE_NM = 3.0   # width of the drawn strand lines in nm
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def tag(nm_per_px):
+    """Name for a resolution, as in the Stage 0 runs: 1 -> '1nm', 0.5 -> '05nm', 0.3 -> '03nm'."""
+    return f"{nm_per_px:g}".replace(".", "") + "nm"
 
 
 def as_str(v):
@@ -250,22 +256,26 @@ def main(root, out, crops_meta):
         sheet.paste(Image.open(os.path.join(out, "png", r.id + ".png")), ((j % 8) * 132 + 2, (j // 8) * 132 + 2))
     qc = os.path.join(REPO, "results", "figures", "qc")
     os.makedirs(qc, exist_ok=True)
-    sheet_path = os.path.join(qc, "crossings_sheet.png")
+    sheet_path = os.path.join(qc, f"{os.path.basename(os.path.normpath(out))}_sheet.png")
     sheet.save(sheet_path)
 
-    print(f"\nsaved {out}/sheet.png -> open it: every square should show a crossing in the MIDDLE,"
+    print(f"\nsaved {sheet_path} -> open it: every square should show a crossing in the MIDDLE,"
           f"\nwith the red and blue lines running along the two DNA strands.")
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=os.path.join(REPO, "data", "knots_and_cats"), help="folder that contains trefoil/, torus/, twist/, ...")
-    ap.add_argument("--out", default=os.path.join(REPO, "crossings"))
+    ap.add_argument("--out", default=None, help="default: crossings_<resolution>, e.g. crossings_05nm")
     ap.add_argument("--crops_meta", default=os.path.join(REPO, "crops", "metadata.csv"))
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--nm_per_px", type=float, default=1.0, help="patch resolution in nm per pixel (default 1.0)")
     ap.add_argument("--window_nm", type=float, default=64.0, help="width of the square around each crossing in nm (default 64)")
     a = ap.parse_args()
+
+    if a.out is None:
+        a.out = os.path.join(REPO, f"crossings_{tag(a.nm_per_px)}")
+    
     NM_PER_PX = a.nm_per_px
     SIZE = int(round(a.window_nm / a.nm_per_px))
     print(f"patches: {a.window_nm:g} x {a.window_nm:g} nm at {NM_PER_PX:g} nm per pixel = {SIZE} x {SIZE} pixels")
