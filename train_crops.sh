@@ -20,12 +20,19 @@ for m in resnet18 convnext_tiny; do
   r "train_05nm_${m}_session" code/train_crops.py --crops crops_05nm --model "$m" --split session
 done
 
+# 0.5 nm crops at full size (512 px, no resize to 224): the fine-tuned models on the honest split
+for m in resnet18 convnext_tiny; do
+  r "train_05nm_native_${m}_session" code/train_crops.py --crops crops_05nm --model "$m" --split session \
+                                     --no_resize --out results/classify_05nm_native
+done
+
 # brightness controls (1 nm): DINOv2 on the honest split
 r train_1nm_norm_dinov2_session   code/train_crops.py --crops crops_1nm_norm   --model dinov2 --split session
 r train_1nm_binary_dinov2_session code/train_crops.py --crops crops_1nm_binary --model dinov2 --split session
 
 # numbers for the tables
 r evaluate code/evaluate.py --oof results/classify_1nm/*_oof.csv results/classify_05nm/*_oof.csv \
+                                  results/classify_05nm_native/*_oof.csv \
                                   results/classify_1nm_norm/*_oof.csv results/classify_1nm_binary/*_oof.csv
 
 echo "ALL DONE"
