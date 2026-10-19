@@ -44,10 +44,9 @@ Before running: run extract_crops.py first, so that crops/metadata.csv exists
 (it is only used to fill in molecule_kept; without it that column stays empty).
 
 Run from the code folder:
-    python extract_crossings.py --root ../data/knots_and_cats --out ../crossings --crops_meta ../crops/metadata.csv
-    python extract_crossings.py          # same, using the default project folders
-Check one file first (prints what it finds, saves nothing):
-    python extract_crossings.py --root ../data/knots_and_cats --check
+    python code/extract_crossings.py --nm_per_px 0.5 --out crossings_05
+    python code/make_labels.py --crossings crossings_05
+    python code/train_crossings.py --crossings crossings_05 --out results/crossings_05 --teacher --finetune
 """
 import argparse, glob, itertools, os
 
@@ -60,10 +59,6 @@ from scipy import ndimage
 from extract_crops import LABELS, H_MAX, H_MIN, condition_of, grain_ids, px_nm, session_of
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-SIZE = 64          # patch size in pixels
-NM_PER_PX = 1.0    # patch resolution -> 64 x 64 nm
-LINE_NM = 3.0      # drawn strand width in nm
 
 
 def as_str(v):
@@ -268,5 +263,10 @@ if __name__ == "__main__":
     ap.add_argument("--out", default=os.path.join(REPO, "crossings"))
     ap.add_argument("--crops_meta", default=os.path.join(REPO, "crops", "metadata.csv"))
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--nm_per_px", type=float, default=1.0, help="patch resolution in nm per pixel (default 1.0)")
+    ap.add_argument("--window_nm", type=float, default=64.0, help="width of the square around each crossing in nm (default 64)")
     a = ap.parse_args()
+    NM_PER_PX = a.nm_per_px
+    SIZE = int(round(a.window_nm / a.nm_per_px))
+    print(f"patches: {a.window_nm:g} x {a.window_nm:g} nm at {NM_PER_PX:g} nm per pixel = {SIZE} x {SIZE} pixels")
     check(a.root) if a.check else main(a.root, a.out, a.crops_meta)
