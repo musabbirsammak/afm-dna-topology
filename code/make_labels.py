@@ -107,8 +107,10 @@ pat["pattern"] = pat.apply(lambda r: "all as expected" if r["sum"] == r["size"]
                            else ("all opposite (check!)" if r["sum"] == 0 else "some flipped"), axis=1)
 clean = clean.merge(pat[["pattern"]], left_on="mol", right_index=True)
 
+mols = clean.drop_duplicates("mol")
+patterns = pd.crosstab(mols.label, mols.pattern, margins=True, margins_name="all")
 print("\nmolecule sign patterns per class:")
-print(pd.crosstab(clean.drop_duplicates("mol").label, clean.drop_duplicates("mol").pattern).to_string())
+print(patterns.to_string())
 
 print("\nTopoStats (FWHM) accuracy on the auto-labelled crossings:")
 for lab, g in clean.groupby("label"):
@@ -124,7 +126,35 @@ out = clean[["id", "mol", "label", "session", "expected_sign", "writhe", "ts_a_o
 out.to_csv(os.path.join(a.crossings, "labels.csv"), index=False)
 print(f"\nsaved {a.crossings}/labels.csv  ({len(out)} labelled crossings)")
 
+# the labels and the printed numbers as tables, in results/<crossings folder>/
 res = os.path.join(REPO, "results", os.path.basename(os.path.normpath(a.crossings)))
 os.makedirs(res, exist_ok=True)
 out.to_csv(os.path.join(res, "crossing_labels.csv"), index=False)
-print(f"saved {res}/crossing_labels.csv")
+
+per_class = []
+for lab, g in clean.groupby("label"):
+    per_class.append(dict(label=lab, expected_sign=signs[lab],
+                          clean_molecules=int((mol.clean & (mol.label == lab)).sum()),
+                          labelled_crossings=len(g), topostats_correct=int(g.ts_correct.sum()),
+                          topostats_accuracy=round(g.ts_correct.mean(), 4)))
+per_class.append(dict(label="all", expected_sign="", clean_molecules=int(mol.clean.sum()),
+                      labelled_crossings=len(clean), topostats_correct=int(clean.ts_correct.sum()),
+                      topostats_accuracy=round(clean.ts_correct.mean(), 4)))
+pd.DataFrame(per_class).to_csv(os.path.join(res, "labels_per_class.csv"), index=False)
+
+patterns.to_csv(os.path.join(res, "sign_patterns.csv"))
+
+conf = []
+for name, m in (("< 0.263 (unreliable)", lo), (">= 0.263 (reliable)", ~lo), ("all", lo | ~lo)):
+    g = clean[m]
+    conf.append(dict(topostats_confidence=name, crossings=int(m.sum()), topostats_correct=int(g.ts_correct.sum()),
+                     topostats_accuracy=round(g.ts_correct.mean(), 4) if len(g) else None))
+pd.DataFrame(conf).to_csv(os.path.join(res, "topostats_by_confidence.csv"), index=False)
+
+pd.DataFrame([dict(topostats_plus_calls=int(tref.get("+", 0)), topostats_minus_calls=int(tref.get("-", 0)),
+                   sign_used=signs["3_1"],
+                   sign_from="majority of TopoStats calls" if a.trefoil_sign == "auto" else "set by hand")]
+             ).to_csv(os.path.join(res, "trefoil_sign.csv"), index=False)
+
+print(f"saved to {res}/: crossing_labels.csv, labels_per_class.csv, sign_patterns.csv, "
+      f"topostats_by_confidence.csv, trefoil_sign.csv")
