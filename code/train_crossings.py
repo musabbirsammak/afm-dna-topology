@@ -35,13 +35,15 @@ Run (a laptop CPU is fine):
 Optional: --predict_all also trains one final model on ALL labelled days, using the same mode,
 and predicts every crossing in metadata.csv (2,457). Saved as all_crossings_predicted_<mode>.csv.
 """
-import argparse, os, time
+import argparse, glob, os, time
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 from sklearn.model_selection import GroupKFold
+from scipy.stats import binomtest
+
 from extract_crossings import tag
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -122,11 +124,14 @@ def as_bool(s):
     return s.map(lambda v: v if isinstance(v, bool) or pd.isna(v) else str(v).strip().lower() == "true")
 
 
-def train_one(a, xtr, ytr, xt, yt, seed, dev):
+MODES = {"true_labels": (False, False), "teacher": (True, False), "teacher_finetune": (True, True)}  # mode: (teacher, finetune)
+
+
+def train_one(a, teacher, finetune, xtr, ytr, xt, yt, seed, dev):
     """One model in the chosen mode. xt, yt = TopoStats' answers (teacher data), may be None."""
-    if a.teacher:
+    if teacher:
         m = fit(xt, yt, a.teacher_epochs, seed=seed, dev=dev)
-        if a.finetune:
+        if finetune:
             m = fit(xtr, ytr, max(10, a.epochs // 3), seed=seed + 50, dev=dev, model=m, lr=2e-4)
         return m
     return fit(xtr, ytr, a.epochs, seed=seed, dev=dev)
@@ -138,80 +143,76 @@ def boot_ci(v, n=2000, seed=0):
     return v.mean(), np.percentile(m, 2.5), np.percentile(m, 97.5)
 
 
-def report(r):
-    print("\n=== crossings never seen in training (grouped by imaging day) ===")
-    for name, col in (("small CNN", "model_correct"), ("TopoStats FWHM", "ts_correct")):
-        m, lo, hi = boot_ci(r[col])
-        print(f"  {name:15s} accuracy {m:.1%}  [95% CI {lo:.1%}-{hi:.1%}]  n={len(r)}")
-    both = (r.model_correct & r.ts_correct).sum(); mo = (r.model_correct & ~r.ts_correct).sum()
-    to = (~r.model_correct & r.ts_correct).sum(); none = (~r.model_correct & ~r.ts_correct).sum()
-    print(f"  both right {both} | only CNN right {mo} | only TopoStats right {to} | both wrong {none}")
-    if mo + to > 0:
-        from scipy.stats import binomtest
-        print(f"  McNemar exact test (is the difference real?): p = {binomtest(mo, mo + to).pvalue:.3f}")
-    print("\n  by knot class:")
-    for lab, g in r.groupby("label"):
-        print(f"    {lab}: CNN {g.model_correct.mean():.0%} | TopoStats {g.ts_correct.mean():.0%} | n={len(g)}")
+def compare(g):
+    """CNN vs TopoStats on the crossings in g: accuracy, 95% bootstrap CI, discordant counts, exact McNemar."""
+    m, mlo, mhi = boot_ci(g.model_correct)
+    t, tlo, thi = boot_ci(g.ts_correct)
+    mo = int((g.model_correct & ~g.ts_correct).sum())
+    to = int((~g.model_correct & g.ts_correct).sum())
+    return dict(n=len(g),
+                cnn_accuracy=round(m, 4), cnn_ci_lo=round(mlo, 4), cnn_ci_hi=round(mhi, 4),
+                topostats_accuracy=round(t, 4), topostats_ci_lo=round(tlo, 4), topostats_ci_hi=round(thi, 4),
+                both_right=int((g.model_correct & g.ts_correct).sum()), only_cnn_right=mo,
+                only_topostats_right=to, both_wrong=int((~g.model_correct & ~g.ts_correct).sum()),
+                p_mcnemar=round(binomtest(mo, mo + to).pvalue, 4) if mo + to > 0 else 1.0)
+
+
+def report(r, mode):
+    """Print the comparison for all crossings, per knot class and per TopoStats confidence; return it as rows."""
     lo = r.ts_confidence < 0.263
-    print("\n  by TopoStats confidence:")
-    print(f"    unreliable (<0.263): CNN {r[lo].model_correct.mean():.0%} | TopoStats {r[lo].ts_correct.mean():.0%} | n={lo.sum()}")
-    print(f"    reliable  (>=0.263): CNN {r[~lo].model_correct.mean():.0%} | TopoStats {r[~lo].ts_correct.mean():.0%} | n={(~lo).sum()}")
+    groups = [("all", r)] + [(f"class {lab}", g) for lab, g in r.groupby("label")] \
+             + [("confidence < 0.263", r[lo]), ("confidence >= 0.263", r[~lo])]
+    rows = [dict(mode=mode, group=name, **compare(g)) for name, g in groups if len(g)]
+    print("\n=== crossings never seen in training (grouped by imaging day) ===")
+    for x in rows:
+        print(f"  {x['group']:20s} n={x['n']:3d} | "
+              f"CNN {x['cnn_accuracy']:.1%} [{x['cnn_ci_lo']:.1%}-{x['cnn_ci_hi']:.1%}] | "
+              f"TopoStats {x['topostats_accuracy']:.1%} [{x['topostats_ci_lo']:.1%}-{x['topostats_ci_hi']:.1%}] | "
+              f"only CNN right {x['only_cnn_right']}, only TopoStats right {x['only_topostats_right']} | "
+              f"McNemar p = {x['p_mcnemar']:.3f}")
+    return rows
 
 
-if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--nm_per_px", type=float, default=1.0, help="resolution used in extract_crossings.py")
-    ap.add_argument("--crossings", default=None, help="default: crossings_<resolution>")
-    ap.add_argument("--out", default=None, help="default: results/<name of the crossings folder>")
-    ap.add_argument("--epochs", type=int, default=60)
-    ap.add_argument("--seeds", type=int, default=3, help="models per fold, predictions averaged")
-    ap.add_argument("--folds", type=int, default=5)
-    ap.add_argument("--predict_all", action="store_true")
-    ap.add_argument("--teacher", action="store_true",
-                    help="train on TopoStats' own calls for ALL crossings of the training days (~2,000, ~80%% correct)")
-    ap.add_argument("--finetune", action="store_true",
-                    help="with --teacher: afterwards fine-tune on the correct answers of the training days")
-    ap.add_argument("--teacher_epochs", type=int, default=20)
-    a = ap.parse_args()
-
-    if a.crossings is None:
-        a.crossings = os.path.join(REPO, f"crossings_{tag(a.nm_per_px)}")
-    if a.out is None:
-        a.out = os.path.join(REPO, "results", os.path.basename(os.path.normpath(a.crossings)))
-
-    dev = device()
-    os.makedirs(a.out, exist_ok=True)
-
-    lab = pd.read_csv(os.path.join(a.crossings, "labels.csv"), dtype={"session": str})
+def load(crossings, teacher):
+    """Labelled crossings of one folder and, for the teacher modes, TopoStats' calls on all its crossings."""
+    lab = pd.read_csv(os.path.join(crossings, "labels.csv"), dtype={"session": str})
     lab = lab[~lab.pattern.str.startswith("all opposite")].reset_index(drop=True)
     lab["true_a_on_top"] = as_bool(lab.true_a_on_top)
     lab["ts_correct"] = as_bool(lab.ts_correct)
     lab = lab[lab.true_a_on_top.notna()].reset_index(drop=True)   # a crossing without an answer cannot be used
-    x = torch.from_numpy(np.stack([np.load(os.path.join(a.crossings, "npy", i + ".npy")) for i in lab.id])).float()
+    x = torch.from_numpy(np.stack([np.load(os.path.join(crossings, "npy", i + ".npy")) for i in lab.id])).float()
     y = torch.tensor(lab.true_a_on_top.astype(bool).values, dtype=torch.float)
-    k = min(a.folds, lab.session.nunique())
-    print(f"device {dev} | {len(lab)} labelled crossings | {lab.session.nunique()} imaging days | {k} folds")
-
-    if a.teacher:
-        md = pd.read_csv(os.path.join(a.crossings, "metadata.csv"), dtype={"session": str})
+    md = xt_all = yt_all = None
+    if teacher:
+        md = pd.read_csv(os.path.join(crossings, "metadata.csv"), dtype={"session": str})
         md["ts_a_on_top"] = as_bool(md.ts_a_on_top)
         md = md[md.ts_a_on_top.notna()].reset_index(drop=True)
-        xt_all = torch.from_numpy(np.stack([np.load(os.path.join(a.crossings, "npy", i + ".npy")) for i in md.id])).float()
+        xt_all = torch.from_numpy(np.stack([np.load(os.path.join(crossings, "npy", i + ".npy")) for i in md.id])).float()
         yt_all = torch.tensor(md.ts_a_on_top.astype(bool).values, dtype=torch.float)
-        print(f"teacher mode: {len(md)} crossings with TopoStats calls available" + (" + fine-tuning" if a.finetune else ""))
+    return lab, x, y, md, xt_all, yt_all
+
+
+def run_mode(a, crossings, data, mode, out, dev):
+    lab, x, y, md, xt_all, yt_all = data
+    teacher, finetune = MODES[mode]
+    k = min(a.folds, lab.session.nunique())
+    print(f"\n##### {os.path.basename(os.path.normpath(crossings))} | mode: {mode} | device {dev} | "
+          f"{len(lab)} labelled crossings | {lab.session.nunique()} imaging days | {k} folds")
+    if teacher:
+        print(f"teacher data: {len(md)} crossings with TopoStats calls")
 
     probs = np.zeros(len(lab)); fold_of = np.zeros(len(lab), int); t0 = time.time()
     for fold, (tr, te) in enumerate(GroupKFold(n_splits=k).split(lab, groups=lab.session)):
         test_days = sorted(lab.session.iloc[te].unique())
         xtr, ytr = x[tr].to(dev), y[tr].to(dev)
         p = np.zeros(len(te)); train_acc = []
-        if a.teacher:
+        if teacher:
             keep = ~md.session.isin(test_days).values          # teacher data never includes the test days
             xt, yt = xt_all[keep].to(dev), yt_all[keep].to(dev)
         else:
             xt = yt = None
         for s in range(a.seeds):
-            m = train_one(a, xtr, ytr, xt, yt, seed=100 * fold + s, dev=dev)
+            m = train_one(a, teacher, finetune, xtr, ytr, xt, yt, seed=100 * fold + s, dev=dev)
             p += predict(m, x[te].to(dev)).cpu().numpy() / a.seeds
             train_acc.append(((predict(m, xtr).cpu().numpy() > 0.5) == ytr.cpu().numpy().astype(bool)).mean())
         probs[te] = p; fold_of[te] = fold
@@ -223,26 +224,70 @@ if __name__ == "__main__":
     r["fold"] = fold_of; r["p_a_on_top"] = probs; r["pred_a_on_top"] = probs > 0.5
     r["model_correct"] = r.pred_a_on_top == r.true_a_on_top.astype(bool)
     r["ts_correct"] = r.ts_correct.astype(bool)
-    tag = "teacher_finetune" if (a.teacher and a.finetune) else ("teacher" if a.teacher else "true_labels")
-    r.to_csv(os.path.join(a.out, f"crossing_oof_{tag}.csv"), index=False)
-    print(f"\nmode: {tag}")
-    report(r)
-    print(f"\nsaved {a.out}/crossing_oof_{tag}.csv")
+    r.to_csv(os.path.join(out, f"crossing_oof_{mode}.csv"), index=False)
+    rows = report(r, mode)
+    print(f"\nsaved {out}/crossing_oof_{mode}.csv")
 
     if a.predict_all:
         # one final model per seed, trained on ALL labelled days in the SAME mode as above
-        allc = pd.read_csv(os.path.join(a.crossings, "metadata.csv"), dtype={"session": str})
+        allc = pd.read_csv(os.path.join(crossings, "metadata.csv"), dtype={"session": str})
         allc["ts_a_on_top"] = as_bool(allc.ts_a_on_top)
-        xa = torch.from_numpy(np.stack([np.load(os.path.join(a.crossings, "npy", i + ".npy")) for i in allc.id])).float()
-        xt, yt = (xt_all.to(dev), yt_all.to(dev)) if a.teacher else (None, None)
+        xa = torch.from_numpy(np.stack([np.load(os.path.join(crossings, "npy", i + ".npy")) for i in allc.id])).float()
+        xt, yt = (xt_all.to(dev), yt_all.to(dev)) if teacher else (None, None)
         p = np.zeros(len(allc))
         for s in range(a.seeds):
-            m = train_one(a, x.to(dev), y.to(dev), xt, yt, seed=999 + s, dev=dev)
+            m = train_one(a, teacher, finetune, x.to(dev), y.to(dev), xt, yt, seed=999 + s, dev=dev)
             p += np.concatenate([predict(m, xb.to(dev)).cpu().numpy() for xb in xa.split(256)]) / a.seeds
         allc["cnn_p_a_on_top"] = p
         allc["cnn_a_on_top"] = p > 0.5
-        allc.to_csv(os.path.join(a.out, f"all_crossings_predicted_{tag}.csv"), index=False)
+        allc.to_csv(os.path.join(out, f"all_crossings_predicted_{mode}.csv"), index=False)
         has = allc.ts_a_on_top.notna()
         agree = (allc.cnn_a_on_top[has] == allc.ts_a_on_top[has].astype(bool)).mean()
-        print(f"saved {a.out}/all_crossings_predicted_{tag}.csv ({len(allc)} crossings; "
+        print(f"saved {out}/all_crossings_predicted_{mode}.csv ({len(allc)} crossings; "
               f"CNN agrees with TopoStats on {agree:.0%} of the {has.sum()} crossings TopoStats answered)")
+    return rows
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--nm_per_px", type=float, default=None, help="only this resolution (default: every crossings_* folder)")
+    ap.add_argument("--crossings", default=None, help="only this crossings folder (default: every crossings_* folder)")
+    ap.add_argument("--mode", nargs="+", choices=list(MODES), default=list(MODES), help="default: all three")
+    ap.add_argument("--out", default=None, help="only for a single folder; default: results/<name of the crossings folder>")
+    ap.add_argument("--epochs", type=int, default=60)
+    ap.add_argument("--seeds", type=int, default=3, help="models per fold, predictions averaged")
+    ap.add_argument("--folds", type=int, default=5)
+    ap.add_argument("--predict_all", action="store_true")
+    ap.add_argument("--teacher_epochs", type=int, default=20)
+    a = ap.parse_args()
+
+    if a.crossings:
+        folders = [a.crossings]
+    elif a.nm_per_px is not None:
+        folders = [os.path.join(REPO, f"crossings_{tag(a.nm_per_px)}")]
+    else:
+        folders = sorted(f for f in glob.glob(os.path.join(REPO, "crossings_*"))
+                         if os.path.exists(os.path.join(f, "labels.csv")))
+    if not folders:
+        raise SystemExit("no crossings_* folder with labels.csv: run extract_crossings.py and make_labels.py first")
+    print("crossings folders:", [os.path.basename(os.path.normpath(f)) for f in folders], "| modes:", a.mode)
+
+    dev = device()
+    for folder in folders:
+        name = os.path.basename(os.path.normpath(folder))
+        out = a.out if (a.out and len(folders) == 1) else os.path.join(REPO, "results", name)
+        os.makedirs(out, exist_ok=True)
+        data = load(folder, teacher=any(MODES[m][0] for m in a.mode))
+        rows = []
+        for mode in a.mode:
+            rows += run_mode(a, folder, data, mode, out, dev)
+
+        # all printed numbers of this folder in one table; modes not run this time keep their earlier rows
+        path = os.path.join(out, "crossing_results.csv")
+        table = pd.DataFrame(rows)
+        if os.path.exists(path):
+            old = pd.read_csv(path)
+            table = pd.concat([old[~old["mode"].isin(a.mode)], table], ignore_index=True)
+        table["mode"] = pd.Categorical(table["mode"], list(MODES), ordered=True)
+        table.sort_values("mode", kind="stable").to_csv(path, index=False)
+        print(f"\nsaved {path}")
