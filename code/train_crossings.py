@@ -29,11 +29,12 @@ Output (default: results/crossings/):
   all_crossings_predicted_<mode>.csv   only with --predict_all (see below)
 
 Run (a laptop CPU is fine):
-  python train_crossings.py --crossings ../crossings                       # correct answers only
-  python train_crossings.py --crossings ../crossings --teacher             # TopoStats as teacher
-  python train_crossings.py --crossings ../crossings --teacher --finetune  # teacher, then correct answers
-Optional: --predict_all also trains one final model on ALL labelled days, using the same mode,
-and predicts every crossing in metadata.csv (2,457). Saved as all_crossings_predicted_<mode>.csv.
+  python code/train_crossings.py                         # every crossings_* folder, all three modes
+  python code/train_crossings.py --nm_per_px 0.5         # only crossings_05nm, all three modes
+  python code/train_crossings.py --mode teacher          # every folder, only the teacher mode
+
+  Optional: --predict_all also trains one final model on ALL labelled days, using the same mode, 
+  and predicts every crossing in metadata.csv (2,457). Saved as all_crossings_predicted_<mode>.csv.
 """
 import argparse, glob, os, time
 
