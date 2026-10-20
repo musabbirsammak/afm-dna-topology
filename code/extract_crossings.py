@@ -183,10 +183,13 @@ def check(root):
 def main(root, out, crops_meta):
     os.makedirs(os.path.join(out, "npy"), exist_ok=True)
     os.makedirs(os.path.join(out, "png"), exist_ok=True)
-    keep = None
-    if crops_meta and os.path.exists(crops_meta):
-        cm = pd.read_csv(crops_meta)
-        keep = {(r.sample, r.image, r.grain): bool(r.keep) for r in cm.itertuples()}
+    
+    if not os.path.exists(crops_meta):
+        raise SystemExit(f"{crops_meta} not found: run extract_crops.py at this resolution first, "
+                         f"or pass --crops_meta <path to a crops metadata.csv>")
+    cm = pd.read_csv(crops_meta)
+    keep = {(r.sample, r.image, r.grain): bool(r.keep) for r in cm.itertuples()}
+
     rows, skipped, on_skel = [], {"<2 strands": 0}, []
     files = files_of(root)
     for i, path in enumerate(files):
@@ -285,13 +288,17 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=os.path.join(REPO, "data", "knots_and_cats"), help="folder that contains trefoil/, torus/, twist/, ...")
     ap.add_argument("--out", default=None, help="default: crossings_<resolution>, e.g. crossings_05nm")
-    ap.add_argument("--crops_meta", default=os.path.join(REPO, "crops", "metadata.csv"))
+    ap.add_argument("--crops_meta", default=None, help="default: crops_<resolution>/metadata.csv")
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--nm_per_px", type=float, default=1.0, help="patch resolution in nm per pixel (default 1.0)")
     ap.add_argument("--window_nm", type=float, default=64.0, help="width of the square around each crossing in nm (default 64)")
     a = ap.parse_args()
+    
+    if a.crops_meta is None:
+        a.crops_meta = os.path.join(REPO, f"crops_{tag(a.nm_per_px)}", "metadata.csv")
     if a.out is None:
         a.out = os.path.join(REPO, f"crossings_{tag(a.nm_per_px)}")
+    
     NM_PER_PX = a.nm_per_px
     WINDOW_NM = a.window_nm
     SIZE = int(round(a.window_nm / a.nm_per_px))
