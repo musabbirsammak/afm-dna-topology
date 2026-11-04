@@ -1,13 +1,46 @@
-data/knots_and_cats/
-crops/
-crops_norm/
-crops_binary/
-crossings/
-outputs/
-__pycache__/
-*.pyc
-.DS_Store
-*.zip
-*.pth
+# ---------------------------------------------------------------- data
+# The AFM dataset is public and large. Download it as described in README.md.
+data/
+*.topostats
+
+# ---------------------------------------------------------------- generated images (rebuilt by run.sh)
+# The arrays and previews are large. The CSV files next to them are kept,
+# because they hold the splits and the crossing labels released with the paper.
+crops*/npy/
+crops*/png/
+crossings*/npy/
+crossings*/png/
+
+# ---------------------------------------------------------------- generated results that are large or temporary
+results/logs/
+results/session_probe/*/dinov2_features.npz
 *.pt
-notes/
+*.pth
+*.ckpt
+
+# ---------------------------------------------------------------- Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+.env
+*.egg-info/
+
+# ---------------------------------------------------------------- LaTeX build files
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+
+# ---------------------------------------------------------------- system and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
