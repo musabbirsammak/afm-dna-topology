@@ -31,7 +31,8 @@ Output: results/classifier_performance/
                          same molecules (knots balanced accuracy, with 95% CI)
   comparisons.csv        exact McNemar tests between related runs on the same molecules:
                          flip vs no flip, 15/60 vs 30 epochs, 0.5 vs 1 nm, norm/binary vs height,
-                         model vs model, every run vs TopoStats. Both all and knots.
+                         model vs model, every run vs TopoStats. Both all and knots. The knots-only
+                         p values are Holm-adjusted together as one family (p_holm).
   confusion/<run>.csv    confusion matrix counts (rows = true type, columns = predicted type)
   confusion/<run>.pdf/.png  the same as a picture, with counts and row percentages (Fig. S1)
   fig2_knots_balanced_accuracy.pdf/.png  knots balanced accuracy of every run with 95% CIs (Fig. 2)
@@ -129,6 +130,16 @@ def macro_auc(r, classes):
     p = r[[f"p_{c}" for c in present]].to_numpy()
     p = p / np.clip(p.sum(1, keepdims=True), 1e-12, None)
     return roc_auc_score(r.label, p, multi_class="ovr", average="macro", labels=present)
+
+def holm(p):
+    """Holm-adjusted p values, returned in the original order."""
+    p = np.asarray(p, float)
+    m = len(p)
+    order = np.argsort(p)
+    adj = np.minimum(np.maximum.accumulate((m - np.arange(m)) * p[order]), 1.0)
+    out = np.empty(m)
+    out[order] = adj
+    return out
 
 
 def mcnemar(ca, cb):
@@ -408,7 +419,12 @@ def main():
             ca, cb = (g.pred == g.label).to_numpy(), (g.ts_topology == g.label).to_numpy()
             comp.append(dict(comparison="model vs TopoStats", scope=scope, run_A=m["run"], run_B="TopoStats",
                              n=len(g), acc_A=ca.mean(), acc_B=cb.mean(), **mcnemar(ca, cb)))
-    pd.DataFrame(comp).to_csv(os.path.join(OUT, "comparisons.csv"), index=False)
+
+    comp = pd.DataFrame(comp)
+    knots = comp.scope == "knots"                     # the family adjusted together (Holm)
+    comp["p_holm"] = np.nan
+    comp.loc[knots, "p_holm"] = holm(comp.loc[knots, "p_mcnemar"])
+    comp.to_csv(os.path.join(OUT, "comparisons.csv"), index=False)
 
     figure(summary)
     figure_confusion_pair(data)
