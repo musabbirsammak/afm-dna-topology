@@ -8,8 +8,7 @@
 #   1. Download the public dataset (Gamill et al., 2025, https://doi.org/10.15131/shef.data.27143238)
 #      and place it so that the .topostats files are at
 #          data/knots_and_cats/<sample>/processed/<image>.topostats
-#   2. Install the Python packages: numpy scipy pandas scikit-learn matplotlib h5py pillow
-#      torch torchvision timm topoly
+#   2. 2. Install the Python packages: pip install -r requirements.txt
 #
 # Hardware: a CUDA GPU is strongly recommended. Fine-tuning ResNet-18 and ConvNeXt-Tiny on a CPU
 # takes days. Everything else runs on a CPU.
@@ -113,13 +112,15 @@ step results/pairing/exp2_topology.csv exp2_topology code/exp2_topology.py
 
 cat <<'EOF'
 
-ALL DONE. Where the results of the paper are:
-  Tables 2 and S2 (sessions, folds)   results/splits/crops_1nm/
-  Tables 4-6, Figures 4-5, Table S1   results/classifier_performance/
-  session-level intervals             results/classifier_performance_session_boot/
-  session probe                       results/session_probe/crops_1nm/
-  Table 3 (crossing labels)           results/crossings_1nm/
-  Tables 7-8, Table S3                results/crossing_performance/
-  Table 9 (strand pairing)            results/pairing/exp1_agnostic_summary.csv
-  Tables 10-11, Table S4              results/pairing/exp2_topology_summary.csv, exp2_topology_answers.csv
-EOF
+  ALL DONE. Where the results of the paper are:
+    Table 1, S3 Table                   results/splits/crops_1nm/
+    Table 2                             results/crossings_1nm/labels_per_class.csv
+    Table 3, Fig 4, S1-S2 Tables        results/classifier_performance/
+    Table 3 CIs, S1 Fig                 results/classifier_performance_session_boot/
+    Table 4                             results/session_probe/crops_1nm/summary.csv
+    Table 5                             results/pairing/exp1_agnostic_summary.csv
+    Table 6                             results/crossing_performance/
+    Table 7, S4 Table                   results/pairing/exp2_topology_summary.csv, exp2_topology_answers.csv
+    Table 8                             results/pairing/exp2_topology.csv (column n_crossings)
+    S2 Fig                              results/figures/qc/crossings_1nm_sheet.png
+  EOF
