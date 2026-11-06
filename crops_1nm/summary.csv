@@ -1,0 +1,8 @@
+label,sample,molecules,kept,sessions,shrunk
+0_1,unknot_plasmid_nic,65,64,2,21
+0_1,unknot_plasmid_sup,70,69,2,15
+3_1,trefoil,54,41,2,1
+4^2_1,cat_nicked,249,246,6,1
+4^2_1,cat_supercoiled,191,182,4,0
+5_1,torus,70,63,4,0
+5_2,twist,60,56,4,1
