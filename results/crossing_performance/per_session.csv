@@ -1,0 +1,57 @@
+run,session,n,types,accuracy
+1nm__true_labels,20220606,20,5_2,0.3
+1nm__true_labels,20220622,5,5_1,0.4
+1nm__true_labels,20221116,25,5_1 5_2,0.44
+1nm__true_labels,20230817,5,5_2,0.6
+1nm__true_labels,20230821,5,5_1,0.4
+1nm__true_labels,20230927,3,3_1,1.0
+1nm__true_labels,20231011,89,3_1,0.5281
+1nm__true_labels,20231207,15,5_2,0.6
+1nm__teacher,20220606,20,5_2,0.85
+1nm__teacher,20220622,5,5_1,0.8
+1nm__teacher,20221116,25,5_1 5_2,0.8
+1nm__teacher,20230817,5,5_2,0.6
+1nm__teacher,20230821,5,5_1,0.8
+1nm__teacher,20230927,3,3_1,0.3333
+1nm__teacher,20231011,89,3_1,0.764
+1nm__teacher,20231207,15,5_2,0.8
+1nm__teacher_finetune,20220606,20,5_2,0.9
+1nm__teacher_finetune,20220622,5,5_1,0.8
+1nm__teacher_finetune,20221116,25,5_1 5_2,0.8
+1nm__teacher_finetune,20230817,5,5_2,0.6
+1nm__teacher_finetune,20230821,5,5_1,0.8
+1nm__teacher_finetune,20230927,3,3_1,0.3333
+1nm__teacher_finetune,20231011,89,3_1,0.7753
+1nm__teacher_finetune,20231207,15,5_2,0.8
+05nm__true_labels,20220606,20,5_2,0.4
+05nm__true_labels,20220622,5,5_1,0.4
+05nm__true_labels,20221116,25,5_1 5_2,0.6
+05nm__true_labels,20230817,5,5_2,0.6
+05nm__true_labels,20230821,5,5_1,0.0
+05nm__true_labels,20230927,3,3_1,0.6667
+05nm__true_labels,20231011,89,3_1,0.5056
+05nm__true_labels,20231207,15,5_2,0.6667
+05nm__teacher,20220606,20,5_2,0.85
+05nm__teacher,20220622,5,5_1,1.0
+05nm__teacher,20221116,25,5_1 5_2,0.8
+05nm__teacher,20230817,5,5_2,0.6
+05nm__teacher,20230821,5,5_1,0.8
+05nm__teacher,20230927,3,3_1,0.3333
+05nm__teacher,20231011,89,3_1,0.7416
+05nm__teacher,20231207,15,5_2,0.8667
+05nm__teacher_finetune,20220606,20,5_2,0.85
+05nm__teacher_finetune,20220622,5,5_1,1.0
+05nm__teacher_finetune,20221116,25,5_1 5_2,0.8
+05nm__teacher_finetune,20230817,5,5_2,0.6
+05nm__teacher_finetune,20230821,5,5_1,0.8
+05nm__teacher_finetune,20230927,3,3_1,0.3333
+05nm__teacher_finetune,20231011,89,3_1,0.7528
+05nm__teacher_finetune,20231207,15,5_2,0.8
+1nm__TopoStats,20220606,20,5_2,0.95
+1nm__TopoStats,20220622,5,5_1,1.0
+1nm__TopoStats,20221116,25,5_1 5_2,0.76
+1nm__TopoStats,20230817,5,5_2,0.4
+1nm__TopoStats,20230821,5,5_1,0.8
+1nm__TopoStats,20230927,3,3_1,0.6667
+1nm__TopoStats,20231011,89,3_1,0.8315
+1nm__TopoStats,20231207,15,5_2,0.8

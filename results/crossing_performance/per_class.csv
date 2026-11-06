@@ -1,0 +1,8 @@
+run,3_1,5_1,5_2
+05nm__teacher,0.7283,0.8667,0.8167
+05nm__teacher_finetune,0.7391,0.8667,0.8
+05nm__true_labels,0.5109,0.2667,0.5667
+1nm__TopoStats,0.8261,0.8,0.8167
+1nm__teacher,0.75,0.8,0.8
+1nm__teacher_finetune,0.7609,0.8,0.8167
+1nm__true_labels,0.5435,0.4,0.45

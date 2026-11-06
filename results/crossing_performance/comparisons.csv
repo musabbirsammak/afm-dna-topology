@@ -1,0 +1,16 @@
+comparison,run_A,run_B,n,acc_A,acc_B,both_right,only_A_right,only_B_right,both_wrong,p_mcnemar,p_holm
+CNN vs TopoStats,1nm__true_labels,1nm__TopoStats,167,0.497,0.8204,68,15,69,15,0.0,0.0
+CNN vs TopoStats,1nm__teacher,1nm__TopoStats,167,0.7725,0.8204,119,10,18,20,0.1849,1.0
+CNN vs TopoStats,1nm__teacher_finetune,1nm__TopoStats,167,0.7844,0.8204,121,10,16,20,0.3269,1.0
+CNN vs TopoStats,05nm__true_labels,05nm__TopoStats,167,0.509,0.8204,69,16,68,14,0.0,0.0
+CNN vs TopoStats,05nm__teacher,05nm__TopoStats,167,0.7725,0.8204,121,8,16,22,0.1516,1.0
+CNN vs TopoStats,05nm__teacher_finetune,05nm__TopoStats,167,0.7725,0.8204,118,11,19,19,0.2005,1.0
+training regime,1nm__true_labels,1nm__teacher,167,0.497,0.7725,66,17,63,21,0.0,0.0
+training regime,1nm__true_labels,1nm__teacher_finetune,167,0.497,0.7844,67,16,64,20,0.0,0.0
+resolution,1nm__true_labels,05nm__true_labels,167,0.497,0.509,63,20,22,62,0.8776,1.0
+training regime,1nm__teacher,1nm__teacher_finetune,167,0.7725,0.7844,129,0,2,36,0.5,1.0
+resolution,1nm__teacher,05nm__teacher,167,0.7725,0.7725,121,8,8,30,1.0,1.0
+resolution,1nm__teacher_finetune,05nm__teacher_finetune,167,0.7844,0.7725,123,8,6,30,0.7905,1.0
+training regime,05nm__true_labels,05nm__teacher,167,0.509,0.7725,63,22,66,16,0.0,0.0
+training regime,05nm__true_labels,05nm__teacher_finetune,167,0.509,0.7725,64,21,65,17,0.0,0.0
+training regime,05nm__teacher,05nm__teacher_finetune,167,0.7725,0.7725,125,4,4,34,1.0,1.0

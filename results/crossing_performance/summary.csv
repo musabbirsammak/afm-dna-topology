@@ -1,0 +1,8 @@
+run,resolution,mode,n,accuracy,accuracy_lo,accuracy_hi
+1nm__true_labels,1nm,true_labels,167,0.497,0.4251,0.5749
+1nm__teacher,1nm,teacher,167,0.7725,0.7066,0.8323
+1nm__teacher_finetune,1nm,teacher_finetune,167,0.7844,0.7186,0.8443
+05nm__true_labels,05nm,true_labels,167,0.509,0.437,0.5808
+05nm__teacher,05nm,teacher,167,0.7725,0.7066,0.8323
+05nm__teacher_finetune,05nm,teacher_finetune,167,0.7725,0.7066,0.8323
+1nm__TopoStats,1nm,TopoStats,167,0.8204,0.7605,0.8743
