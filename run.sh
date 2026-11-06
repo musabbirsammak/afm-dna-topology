@@ -8,7 +8,7 @@
 #   1. Download the public dataset (Gamill et al., 2025, https://doi.org/10.15131/shef.data.27143238)
 #      and place it so that the .topostats files are at
 #          data/knots_and_cats/<sample>/processed/<image>.topostats
-#   2. 2. Install the Python packages: pip install -r requirements.txt
+#   2. Install the Python packages: pip install -r requirements.txt
 #
 # Hardware: a CUDA GPU is strongly recommended. Fine-tuning ResNet-18 and ConvNeXt-Tiny on a CPU
 # takes days. Everything else runs on a CPU.
@@ -123,4 +123,4 @@ cat <<'EOF'
     Table 7, S4 Table                   results/pairing/exp2_topology_summary.csv, exp2_topology_answers.csv
     Table 8                             results/pairing/exp2_topology.csv (column n_crossings)
     S2 Fig                              results/figures/qc/crossings_1nm_sheet.png
-  EOF
+EOF
