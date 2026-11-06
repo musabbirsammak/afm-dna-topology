@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: "If you use this code or the crossing labels, please cite them as below."
+title: "afm-dna-topology: session-aware testing, energy-based strand pairing and crossing limits for DNA knots in AFM images"
+type: software
+authors:
+  - family-names: Sammak
+    given-names: Musabbir Hasan
+    affiliation: "Department of Software Engineering, Daffodil International University"
+  - family-names: Biplob
+    given-names: Khalid Been Md Badruzzaman
+    affiliation: "Department of Software Engineering, Daffodil International University"
+  - family-names: Toma
+    given-names: Tapushe Rabaya
+    affiliation: "Department of Software Engineering, Daffodil International University"
+  - family-names: Mahmud
+    given-names: Imran
+    affiliation: "Department of Software Engineering, Daffodil International University"
+repository-code: "https://github.com/musabbirsammak/afm-dna-topology"
+license: MIT
+version: "1.0.0"
+keywords:
+  - atomic force microscopy
+  - DNA knots
+  - DNA topology
+  - TopoStats
+  - data leakage
+  - strand pairing
+references:
+  - type: data
+    title: "DNA knots, catenanes, and replication intermediates via high-resolution AFM"
+    authors:
+      - family-names: Gamill
+        given-names: M.
+      - family-names: Holmes
+        given-names: E.
+      - name: "et al."
+    publisher:
+      name: "The University of Sheffield"
+    year: 2025
+    doi: "10.15131/shef.data.27143238"
