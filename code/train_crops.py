@@ -16,21 +16,22 @@ The folds come from splits.csv (made by make_splits.py):
   --split session : whole imaging days are held out (the honest test)
   --split image   : only whole images are held out (the optimistic test)
 
-Output: results/classify/<model>_<split>_oof.csv
+Output: results/classify_<name>/<model>_<split>_oof.csv
   one row per molecule: true label, predicted label, probability of each class.
-  The folder follows the crops folder: crops -> results/classify, crops_norm -> results/classify_norm,
-  crops_binary -> results/classify_binary. Use --out to choose another folder.
+  The folder follows the crops folder: crops_1nm -> results/classify_1nm, crops_1nm_norm ->
+  results/classify_1nm_norm, crops_1nm_binary -> results/classify_1nm_binary. Use --out to choose
+  another folder.
 
-Run (examples):
-  python train.py --crops crops --model dinov2        --split session
-  python train.py --crops crops --model dinov2        --split image
-  python train.py --crops crops --model resnet18      --split session
-  python train.py --crops crops --model resnet18      --split image
-  python train.py --crops crops --model convnext_tiny --split session
-  python train.py --crops crops --model convnext_tiny --split image
-  python train.py --crops crops --model resnet18      --split session --flip   # control run
+Run from the project folder (examples; run.sh runs every configuration of the paper):
+  python code/train_crops.py --crops crops_1nm --model dinov2        --split session
+  python code/train_crops.py --crops crops_1nm --model dinov2        --split image
+  python code/train_crops.py --crops crops_1nm --model resnet18      --split session
+  python code/train_crops.py --crops crops_1nm --model resnet18      --split image
+  python code/train_crops.py --crops crops_1nm --model convnext_tiny --split session
+  python code/train_crops.py --crops crops_1nm --model convnext_tiny --split image
+  python code/train_crops.py --crops crops_1nm --model resnet18      --split session --flip   # control run
 Then:
-  python evaluate.py --oof results/classify/*_oof.csv
+  python code/evaluate_classifiers.py
 
 Flips: no horizontal/vertical flips by default. A flip turns a knot into its mirror image. Our
 labels do not tell mirror images apart (5_1 and its mirror are both "5_1"), so a flip does not
@@ -187,4 +188,4 @@ if __name__ == "__main__":
     path = os.path.join(args.out, f"{tag}_oof.csv")
     res.to_csv(path, index=False)
     acc = (res.label == res.pred).mean()
-    print(f"\nsaved {path} | overall accuracy {acc:.1%}  -> now run evaluate.py")
+    print(f"\nsaved {path} | overall accuracy {acc:.1%}  -> now run evaluate_classifiers.py")

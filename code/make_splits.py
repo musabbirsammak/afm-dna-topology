@@ -17,15 +17,15 @@ This does not always work in the session split. Almost all trefoils were imaged 
 so almost all trefoils end up in the same fold.
 
 Output, for each crops folder:
-  <crops folder>/splits.csv                       molecules with their fold numbers (read by train.py)
+  <crops folder>/splits.csv                       molecules with their fold numbers (read by train_crops.py)
   results/splits/<crops folder>/class_counts.csv  molecules and sessions per knot type
   results/splits/<crops folder>/folds_session.csv test molecules per fold and knot type, session split
   results/splits/<crops folder>/folds_image.csv   the same for the image split
 
 Run from the project folder:
-  python code/make_splits.py                  # every folder named crops* that has a metadata.csv
-  python code/make_splits.py --crops crops    # only this folder
-  python code/make_splits.py --k 10           # a different number of folds
+  python code/make_splits.py                      # every folder named crops* that has a metadata.csv
+  python code/make_splits.py --crops crops_1nm    # only this folder
+  python code/make_splits.py --k 10               # a different number of folds
 """
 import argparse, glob, os
 

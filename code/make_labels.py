@@ -31,11 +31,11 @@ Each labelled molecule also gets a pattern:
   "all opposite (check!)" none match. Either a mirror-image knot or a systematic error.
                           train_crossings.py leaves these molecules out.
 
-Input:  crossings/metadata.csv  (from extract_crossings.py)
+Input:  crossings_<resolution>/metadata.csv  (from extract_crossings.py)
 
 Output (the same table, saved twice):
-  crossings/labels.csv
-  results/crossings/crossing_labels.csv
+  crossings_<resolution>/labels.csv
+  results/crossings_<resolution>/crossing_labels.csv
   one row per labelled crossing:
     id, mol            which sample and which molecule
     label, session     knot type and imaging day
@@ -53,9 +53,10 @@ Prints:
   - the same split by TopoStats' reliability score (below / above 0.263, the threshold
     suggested by Holmes et al., 2025)
 
-Run from the code folder:
-  python make_labels.py
-  python make_labels.py --trefoil_sign -    # sensitivity check only: assume the opposite trefoil chirality
+Run from the project folder:
+  python code/make_labels.py                      # 1 nm per pixel (crossings_1nm)
+  python code/make_labels.py --nm_per_px 0.5      # crossings_05nm
+  python code/make_labels.py --trefoil_sign -    # sensitivity check only: assume the opposite trefoil chirality
 """
 import argparse, os
 

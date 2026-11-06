@@ -1,9 +1,9 @@
 """
 Turn the saved predictions into the numbers for the results tables.
 
-Input: one or more *_oof.csv files written by train.py
+Input: one or more *_oof.csv files written by train_crops.py
 Run:
-  python evaluate.py --oof results/classify/*_oof.csv
+  python code/evaluate.py --oof results/classify_1nm/*_oof.csv
 
 Prints, for each file:
   - model, all classes : accuracy and balanced accuracy, each with a 95% bootstrap

@@ -29,24 +29,23 @@ The question a model answers later: is strand A on top of strand B?
 Note: the original images have pixels of 0.29 to 0.98 nm, so cutting at 1 nm per pixel loses
 some detail. To change this, edit NM_PER_PX and SIZE below (e.g. 0.5 and 128 keeps a 64 nm square).
 
-Output (default: crossings/ in the project folder):
-    crossings/npy/<id>.npy     the 3 x 64 x 64 arrays (for training)
-    crossings/png/<id>.png     colour preview: grey = height, red = strand A, blue = strand B
-    results/figures/qc/crossings_sheet.png
-                               40 random previews. OPEN IT: each square should show
-                               a crossing in the middle
-    crossings/metadata.csv     one row per sample: sample, knot type, imaging session, buffer,
-                               strand widths, TopoStats' decision (ts_a_on_top), its reliability
-                               score (ts_confidence), the crossing sign (writhe), and whether the
-                               molecule passed the length filter in extract_crops.py (molecule_kept)
+Output (default: crossings_<resolution>/                    in the project folder, e.g. crossings_1nm/):
+    crossings_<resolution>/npy/<id>.npy                     the 3 x 64 x 64 arrays (for training)
+    crossings_<resolution>/png/<id>.png                     colour preview: grey = height, red = strand A, blue = strand B
+    results/figures/qc/crossings_<resolution>_sheet.png
+     crossings_<resolution>/metadata.csv                    one row per sample: sample, knot type, imaging session, buffer,
+                                                            strand widths, TopoStats' decision (ts_a_on_top), its reliability
+                                                            score (ts_confidence), the crossing sign (writhe), and whether the
+                                                            molecule passed the length filter in extract_crops.py (molecule_kept)
 
-Before running: run extract_crops.py first, so that crops/metadata.csv exists
+Before running: run extract_crops.py first, so that crops_<resolution>/metadata.csv exists
 (it is only used to fill in molecule_kept; without it that column stays empty).
 
-Run from the code folder:
-    python code/extract_crossings.py --nm_per_px 0.5 --out crossings_05
-    python code/make_labels.py --crossings crossings_05
-    python code/train_crossings.py --crossings crossings_05 --out results/crossings_05 --teacher --finetune
+Run from the project folder:
+    python code/extract_crossings.py                    # 1 nm per pixel -> crossings_1nm/
+    python code/extract_crossings.py --nm_per_px 0.5    # -> crossings_05nm/
+    python code/make_labels.py --nm_per_px 0.5
+    python code/train_crossings.py --nm_per_px 0.5
 """
 import argparse, glob, itertools, os
 

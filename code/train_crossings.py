@@ -3,19 +3,18 @@ Train a small network to answer "is strand A (red) on top of strand B (blue)?"
 and compare it with TopoStats' rule (the wider strand is on top) on exactly the same crossings.
 
 Uses:
-  crossings/npy/<id>.npy     3 x 64 x 64 squares (height, strand A, strand B)  - from extract_crossings.py
-  crossings/labels.csv       the correct answers (167 crossings)              - from make_labels.py
-  crossings/metadata.csv     TopoStats' answers for all crossings (only for --teacher and --predict_all)
+  crossings_<resolution>/npy/<id>.npy     3 x 64 x 64 squares (height, strand A, strand B)  - from extract_crossings.py
+  crossings_<resolution>/labels.csv       the correct answers (167 crossings)              - from make_labels.py
+  crossings_<resolution>/metadata.csv     TopoStats' answers for all crossings (teacher modes and --predict_all)
 Molecules whose crossings ALL disagree with the expected sign ("all opposite") are left out.
 
 Testing: crossings are grouped by imaging day. Each day is tested by a model that never saw
 that day in training, so every labelled crossing is predicted exactly once.
 
-Training modes:
-  (default)            learn only from the correct answers of the training days
-  --teacher            learn from TopoStats' own answers for all crossings of the training days
-                       (about 2,000, about 80% correct; no correct answers used)
-  --teacher --finetune the teacher model, then trained further on the correct answers of the training days
+Training modes (--mode; all three by default):
+  true_labels          learn only from the correct answers of the training days
+  teacher              learn from TopoStats' own answers for all crossings of the training days
+  teacher_finetune     the teacher model, then trained further on the correct answers of the training days
 
 Making the most of little data (each square -> 16 versions, all with a known answer):
   - 4 rotations x mirror or not (a mirror image does NOT change which strand is on top)
@@ -23,7 +22,7 @@ Making the most of little data (each square -> 16 versions, all with a known ans
   - heights scaled by 0.85-1.15 plus a little noise, so a session's overall brightness helps less
 At test time the prediction is averaged over all 16 versions.
 
-Output (default: results/crossings/):
+Output (default: results/crossings_<resolution>/):
   crossing_oof_<mode>.csv        one row per labelled crossing: correct answer, the network's
                                  answer and TopoStats' answer (mode = true_labels, teacher, teacher_finetune)
   all_crossings_predicted_<mode>.csv   only with --predict_all (see below)
