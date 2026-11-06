@@ -1,0 +1,36 @@
+
+=== results/classify_1nm_ep15/convnext_tiny_session_oof.csv
+  model, all classes           n= 721  acc 78.9% [76.0%-81.7%]  bal.acc 48.7% [45.1%-52.3%]  macro-F1 0.48
+  model, knots only            n= 293  acc 49.8% [44.4%-55.3%]  bal.acc 36.1% [31.7%-40.6%]  macro-F1 0.29
+  TopoStats, all classes       n= 721  acc 22.1% [19.1%-25.1%]  bal.acc 29.9% [26.4%-33.6%]  macro-F1 0.07
+  TopoStats, knots only        n= 293  acc 48.5% [43.0%-53.9%]  bal.acc 36.4% [31.8%-41.4%]  macro-F1 0.10
+  recall per class: {'0_1': '81% (n=133)', '3_1': '0% (n=41)', '4^2_1': '99% (n=428)', '5_1': '37% (n=63)', '5_2': '27% (n=56)'}
+  accuracy per imaging condition: {'MgNi': '76% (n=527)', 'Ni': '83% (n=75)', 'other': '90% (n=119)'}
+  saved results/classify_1nm_ep15/convnext_tiny_session_oof_confusion.png
+
+=== results/classify_1nm_ep15/resnet18_session_oof.csv
+  model, all classes           n= 721  acc 76.6% [73.5%-79.5%]  bal.acc 45.4% [42.0%-48.9%]  macro-F1 0.47
+  model, knots only            n= 293  acc 44.0% [38.6%-49.8%]  bal.acc 32.1% [27.7%-36.5%]  macro-F1 0.27
+  TopoStats, all classes       n= 721  acc 22.1% [19.1%-25.1%]  bal.acc 29.9% [26.4%-33.6%]  macro-F1 0.07
+  TopoStats, knots only        n= 293  acc 48.5% [43.0%-53.9%]  bal.acc 36.4% [31.8%-41.4%]  macro-F1 0.10
+  recall per class: {'0_1': '73% (n=133)', '3_1': '2% (n=41)', '4^2_1': '99% (n=428)', '5_1': '19% (n=63)', '5_2': '34% (n=56)'}
+  accuracy per imaging condition: {'MgNi': '72% (n=527)', 'Ni': '85% (n=75)', 'other': '92% (n=119)'}
+  saved results/classify_1nm_ep15/resnet18_session_oof_confusion.png
+
+=== results/classify_1nm_ep60/convnext_tiny_session_oof.csv
+  model, all classes           n= 721  acc 77.1% [74.1%-80.0%]  bal.acc 44.4% [41.2%-47.6%]  macro-F1 0.45
+  model, knots only            n= 293  acc 45.4% [39.9%-50.9%]  bal.acc 30.8% [26.9%-34.9%]  macro-F1 0.25
+  TopoStats, all classes       n= 721  acc 22.1% [19.1%-25.1%]  bal.acc 29.9% [26.4%-33.6%]  macro-F1 0.07
+  TopoStats, knots only        n= 293  acc 48.5% [43.0%-53.9%]  bal.acc 36.4% [31.8%-41.4%]  macro-F1 0.10
+  recall per class: {'0_1': '82% (n=133)', '3_1': '2% (n=41)', '4^2_1': '99% (n=428)', '5_1': '19% (n=63)', '5_2': '20% (n=56)'}
+  accuracy per imaging condition: {'MgNi': '74% (n=527)', 'Ni': '75% (n=75)', 'other': '92% (n=119)'}
+  saved results/classify_1nm_ep60/convnext_tiny_session_oof_confusion.png
+
+=== results/classify_1nm_ep60/resnet18_session_oof.csv
+  model, all classes           n= 721  acc 75.6% [72.5%-78.6%]  bal.acc 40.0% [37.5%-42.6%]  macro-F1 0.40
+  model, knots only            n= 293  acc 40.6% [35.2%-46.4%]  bal.acc 25.1% [22.1%-28.2%]  macro-F1 0.20
+  TopoStats, all classes       n= 721  acc 22.1% [19.1%-25.1%]  bal.acc 29.9% [26.4%-33.6%]  macro-F1 0.07
+  TopoStats, knots only        n= 293  acc 48.5% [43.0%-53.9%]  bal.acc 36.4% [31.8%-41.4%]  macro-F1 0.10
+  recall per class: {'0_1': '80% (n=133)', '3_1': '0% (n=41)', '4^2_1': '100% (n=428)', '5_1': '13% (n=63)', '5_2': '7% (n=56)'}
+  accuracy per imaging condition: {'MgNi': '73% (n=527)', 'Ni': '72% (n=75)', 'other': '89% (n=119)'}
+  saved results/classify_1nm_ep60/resnet18_session_oof_confusion.png

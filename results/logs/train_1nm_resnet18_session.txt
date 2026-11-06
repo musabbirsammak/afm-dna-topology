@@ -1,0 +1,35 @@
+device cuda | 721 molecules | classes ['0_1', '3_1', '4^2_1', '5_1', '5_2'] | split fold_session
+Downloading: "https://download.pytorch.org/models/resnet18-f37072fd.pth" to /root/.cache/torch/hub/checkpoints/resnet18-f37072fd.pth
+  0%|          | 0.00/44.7M [00:00<?, ?B/s]100%|██████████| 44.7M/44.7M [00:00<00:00, 543MB/s]
+  fold 0 epoch 5/30 loss 0.566 (9s)
+  fold 0 epoch 10/30 loss 0.448 (17s)
+  fold 0 epoch 15/30 loss 0.346 (26s)
+  fold 0 epoch 20/30 loss 0.213 (35s)
+  fold 0 epoch 25/30 loss 0.142 (43s)
+  fold 0 epoch 30/30 loss 0.105 (52s)
+  fold 1 epoch 5/30 loss 0.674 (8s)
+  fold 1 epoch 10/30 loss 0.632 (16s)
+  fold 1 epoch 15/30 loss 0.401 (25s)
+  fold 1 epoch 20/30 loss 0.309 (33s)
+  fold 1 epoch 25/30 loss 0.265 (41s)
+  fold 1 epoch 30/30 loss 0.227 (49s)
+  fold 2 epoch 5/30 loss 0.810 (8s)
+  fold 2 epoch 10/30 loss 0.649 (17s)
+  fold 2 epoch 15/30 loss 0.556 (25s)
+  fold 2 epoch 20/30 loss 0.410 (33s)
+  fold 2 epoch 25/30 loss 0.298 (42s)
+  fold 2 epoch 30/30 loss 0.304 (50s)
+  fold 3 epoch 5/30 loss 0.710 (8s)
+  fold 3 epoch 10/30 loss 0.571 (17s)
+  fold 3 epoch 15/30 loss 0.479 (25s)
+  fold 3 epoch 20/30 loss 0.378 (33s)
+  fold 3 epoch 25/30 loss 0.313 (41s)
+  fold 3 epoch 30/30 loss 0.335 (49s)
+  fold 4 epoch 5/30 loss 0.694 (8s)
+  fold 4 epoch 10/30 loss 0.562 (16s)
+  fold 4 epoch 15/30 loss 0.407 (25s)
+  fold 4 epoch 20/30 loss 0.333 (33s)
+  fold 4 epoch 25/30 loss 0.216 (41s)
+  fold 4 epoch 30/30 loss 0.209 (49s)
+
+saved /workspace/afm/results/classify_1nm/resnet18_session_oof.csv | overall accuracy 75.2%  -> now run evaluate.py

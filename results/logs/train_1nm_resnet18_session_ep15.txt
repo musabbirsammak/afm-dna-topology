@@ -1,0 +1,18 @@
+device cuda | 721 molecules | classes ['0_1', '3_1', '4^2_1', '5_1', '5_2'] | split fold_session
+  fold 0 epoch 5/15 loss 0.532 (9s)
+  fold 0 epoch 10/15 loss 0.365 (17s)
+  fold 0 epoch 15/15 loss 0.261 (26s)
+  fold 1 epoch 5/15 loss 0.826 (8s)
+  fold 1 epoch 10/15 loss 0.509 (16s)
+  fold 1 epoch 15/15 loss 0.353 (24s)
+  fold 2 epoch 5/15 loss 0.787 (8s)
+  fold 2 epoch 10/15 loss 0.589 (16s)
+  fold 2 epoch 15/15 loss 0.476 (25s)
+  fold 3 epoch 5/15 loss 0.633 (8s)
+  fold 3 epoch 10/15 loss 0.495 (16s)
+  fold 3 epoch 15/15 loss 0.433 (24s)
+  fold 4 epoch 5/15 loss 0.657 (8s)
+  fold 4 epoch 10/15 loss 0.437 (16s)
+  fold 4 epoch 15/15 loss 0.290 (24s)
+
+saved results/classify_1nm_ep15/resnet18_session_oof.csv | overall accuracy 76.6%  -> now run evaluate.py

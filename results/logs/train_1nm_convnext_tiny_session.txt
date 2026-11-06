@@ -1,0 +1,35 @@
+device cuda | 721 molecules | classes ['0_1', '3_1', '4^2_1', '5_1', '5_2'] | split fold_session
+Downloading: "https://download.pytorch.org/models/convnext_tiny-983f1562.pth" to /root/.cache/torch/hub/checkpoints/convnext_tiny-983f1562.pth
+  0%|          | 0.00/109M [00:00<?, ?B/s] 20%|█▉        | 21.5M/109M [00:00<00:00, 225MB/s] 41%|████      | 44.4M/109M [00:00<00:00, 233MB/s] 87%|████████▋ | 94.9M/109M [00:00<00:00, 368MB/s]100%|██████████| 109M/109M [00:00<00:00, 346MB/s] 
+  fold 0 epoch 5/30 loss 0.827 (18s)
+  fold 0 epoch 10/30 loss 0.445 (32s)
+  fold 0 epoch 15/30 loss 0.352 (46s)
+  fold 0 epoch 20/30 loss 0.125 (60s)
+  fold 0 epoch 25/30 loss 0.064 (74s)
+  fold 0 epoch 30/30 loss 0.071 (89s)
+  fold 1 epoch 5/30 loss 0.898 (14s)
+  fold 1 epoch 10/30 loss 0.692 (27s)
+  fold 1 epoch 15/30 loss 0.353 (41s)
+  fold 1 epoch 20/30 loss 0.229 (54s)
+  fold 1 epoch 25/30 loss 0.152 (68s)
+  fold 1 epoch 30/30 loss 0.112 (82s)
+  fold 2 epoch 5/30 loss 1.192 (15s)
+  fold 2 epoch 10/30 loss 0.866 (30s)
+  fold 2 epoch 15/30 loss 0.722 (45s)
+  fold 2 epoch 20/30 loss 0.678 (60s)
+  fold 2 epoch 25/30 loss 0.544 (75s)
+  fold 2 epoch 30/30 loss 0.499 (90s)
+  fold 3 epoch 5/30 loss 0.810 (14s)
+  fold 3 epoch 10/30 loss 0.566 (27s)
+  fold 3 epoch 15/30 loss 0.463 (41s)
+  fold 3 epoch 20/30 loss 0.281 (54s)
+  fold 3 epoch 25/30 loss 0.166 (68s)
+  fold 3 epoch 30/30 loss 0.119 (82s)
+  fold 4 epoch 5/30 loss 1.165 (14s)
+  fold 4 epoch 10/30 loss 0.694 (27s)
+  fold 4 epoch 15/30 loss 0.666 (41s)
+  fold 4 epoch 20/30 loss 0.427 (54s)
+  fold 4 epoch 25/30 loss 0.241 (68s)
+  fold 4 epoch 30/30 loss 0.164 (82s)
+
+saved /workspace/afm/results/classify_1nm/convnext_tiny_session_oof.csv | overall accuracy 77.5%  -> now run evaluate.py

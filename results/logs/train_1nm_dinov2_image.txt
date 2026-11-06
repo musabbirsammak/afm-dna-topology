@@ -1,0 +1,9 @@
+device cuda | 721 molecules | classes ['0_1', '3_1', '4^2_1', '5_1', '5_2'] | split fold_image
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  fold 0: 144 test molecules
+  fold 1: 145 test molecules
+  fold 2: 144 test molecules
+  fold 3: 144 test molecules
+  fold 4: 144 test molecules
+
+saved /workspace/afm/results/classify_1nm/dinov2_image_oof.csv | overall accuracy 85.2%  -> now run evaluate.py
