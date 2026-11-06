@@ -1,0 +1,5 @@
+label,all as expected,all opposite (check!),some flipped,all
+3_1,16,2,15,33
+5_1,1,0,2,3
+5_2,5,0,7,12
+all,22,2,24,48

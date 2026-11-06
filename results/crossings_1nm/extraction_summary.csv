@@ -1,0 +1,2 @@
+nm_per_px,window_nm,patch_px,topostats_files,molecules_with_crossings,crossings,samples,skipped_less_than_2_strands,skipped_strand_far_from_crossing,median_crossing_pixels_on_skeleton
+1.0,64.0,64,402,710,1689,2387,112,70,1.0

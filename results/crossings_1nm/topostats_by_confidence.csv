@@ -1,0 +1,4 @@
+topostats_confidence,crossings,topostats_correct,topostats_accuracy
+< 0.263 (unreliable),115,86,0.7478
+>= 0.263 (reliable),58,51,0.8793
+all,173,137,0.7919
